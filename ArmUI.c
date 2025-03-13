@@ -8,8 +8,8 @@
 //booleans to keep track of when a key is pressed (to prevent repeated calling)
 static gboolean key_light_on = FALSE;
 static gboolean key_light_off = FALSE;
-static gboolean key_body_pos = FALSE;
-static gboolean key_body_neg = FALSE;
+static gboolean key_base_pos = FALSE;
+static gboolean key_base_neg = FALSE;
 static gboolean key_shoulder_pos = FALSE;
 static gboolean key_shoulder_neg = FALSE;
 static gboolean key_elbow_pos = FALSE;
@@ -61,31 +61,30 @@ static void on_light_off_button_clicked(GtkWidget *widget, gpointer data) {
     printf("Debugging: light off\n");
 }
 
-//body (clockwise = +, anticlockwise = -)
-static void on_body_pos_button_pressed(GtkWidget *widget, gpointer data)
-{
+//base (clockwise = +, anticlockwise = -)
+static void on_base_pos_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
-    send_robot_command("body:right");
-    printf("Debugging: body turning clockwise\n");
+    send_robot_command("base:left");
+    printf("Debugging: base turning clockwise\n");
 }
+
 //ask petr if this method of controlling will work with the driver
-static void on_body_pos_button_released(GtkWidget *widget, gpointer data)
-{
+static void on_base_pos_button_released(GtkWidget *widget, gpointer data) {
     //call to device
-    send_robot_command("body:stop");
-    printf("Debugging: body turning clockwise stopped\n");
+    send_robot_command("base:stop");
+    printf("Debugging: base turning clockwise stopped\n");
 }
 
-static void on_body_neg_button_pressed(GtkWidget *widget, gpointer data) {
+static void on_base_neg_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
-    send_robot_command("body:left");
-    printf("Debugging: body turning anticlockwise\n");
+    send_robot_command("base:right");
+    printf("Debugging: base turning anticlockwise\n");
 }
 
-static void on_body_neg_button_released(GtkWidget *widget, gpointer data) {
+static void on_base_neg_button_released(GtkWidget *widget, gpointer data) {
     //call to device
-    send_robot_command("body:stop");
-    printf("Debugging: body turning anticlockwise stopped\n");
+    send_robot_command("base:stop");
+    printf("Debugging: base turning anticlockwise stopped\n");
 }
 
 //shoulder (clockwise = +, anticlockwise = -)
@@ -122,7 +121,7 @@ static void on_elbow_pos_button_pressed(GtkWidget *widget, gpointer data) {
 
 static void on_elbow_pos_button_released(GtkWidget *widget, gpointer data) {
     //call to device
-    send_robot_command("elbow:down");
+    send_robot_command("elbow:stop");
     printf("Debugging: elbow turning clockwise stopped\n");
 }
 
@@ -208,17 +207,17 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer dat
             }
             break;
         case GDK_KEY_k:
-            if(!key_body_pos)
+            if(!key_base_pos)
             {
-                key_body_pos = TRUE;
-                on_body_pos_button_pressed(widget, data);
+                key_base_pos = TRUE;
+                on_base_pos_button_pressed(widget, data);
             }
             break;
         case GDK_KEY_o:
-            if(!key_body_neg)
+            if(!key_base_neg)
             {
-                key_body_neg = TRUE;
-                on_body_neg_button_pressed(widget, data);
+                key_base_neg = TRUE;
+                on_base_neg_button_pressed(widget, data);
             }
             break;
         case GDK_KEY_j:
@@ -293,17 +292,17 @@ static gboolean on_key_release(GtkWidget *widget, GdkEventKey *event, gpointer d
             key_light_off = FALSE;
             break;
         case GDK_KEY_k:
-            if(key_body_pos)
+            if(key_base_pos)
             {
-                on_body_pos_button_released(widget, data);
-                key_body_pos = FALSE;
+                on_base_pos_button_released(widget, data);
+                key_base_pos = FALSE;
             }
             break;
         case GDK_KEY_o:
-            if(key_body_neg)
+            if(key_base_neg)
             {
-                on_body_neg_button_released(widget, data);
-                key_body_neg = FALSE;
+                on_base_neg_button_released(widget, data);
+                key_base_neg = FALSE;
             }
             break;
         case GDK_KEY_j:
@@ -407,23 +406,23 @@ int main(int argc, char *argv[])
     gtk_box_pack_start(GTK_BOX(light_hbox), light_off_button, TRUE, TRUE, 0);
 
 
- //body label
-    GtkWidget *body_label = gtk_label_new("Body");
-    gtk_box_pack_start(GTK_BOX(vbox), body_label, FALSE, FALSE, 0);
+ //base label
+    GtkWidget *base_label = gtk_label_new("base");
+    gtk_box_pack_start(GTK_BOX(vbox), base_label, FALSE, FALSE, 0);
 
-    //hbox for body buttons
-    GtkWidget *body_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); //5 pixel spacing
-    gtk_box_pack_start(GTK_BOX(vbox), body_hbox, FALSE, FALSE, 0);
-    //body pos button (pressed and released for continuous holding button)
-    GtkWidget *body_pos_button = gtk_button_new_with_label("+ (k)");
-    g_signal_connect(body_pos_button, "pressed", G_CALLBACK(on_body_pos_button_pressed), NULL);
-    g_signal_connect(body_pos_button, "released", G_CALLBACK(on_body_pos_button_released), NULL);
-    gtk_box_pack_start(GTK_BOX(body_hbox), body_pos_button, TRUE, TRUE, 0);
-    //body neg button
-    GtkWidget *body_neg_button = gtk_button_new_with_label("- (o)");
-    g_signal_connect(body_neg_button, "pressed", G_CALLBACK(on_body_neg_button_pressed), NULL);
-    g_signal_connect(body_neg_button, "released", G_CALLBACK(on_body_neg_button_released), NULL);
-    gtk_box_pack_start(GTK_BOX(body_hbox), body_neg_button, TRUE, TRUE, 0);
+    //hbox for base buttons
+    GtkWidget *base_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); //5 pixel spacing
+    gtk_box_pack_start(GTK_BOX(vbox), base_hbox, FALSE, FALSE, 0);
+    //base pos button (pressed and released for continuous holding button)
+    GtkWidget *base_pos_button = gtk_button_new_with_label("+ (k)");
+    g_signal_connect(base_pos_button, "pressed", G_CALLBACK(on_base_pos_button_pressed), NULL);
+    g_signal_connect(base_pos_button, "released", G_CALLBACK(on_base_pos_button_released), NULL);
+    gtk_box_pack_start(GTK_BOX(base_hbox), base_pos_button, TRUE, TRUE, 0);
+    //base neg button
+    GtkWidget *base_neg_button = gtk_button_new_with_label("- (o)");
+    g_signal_connect(base_neg_button, "pressed", G_CALLBACK(on_base_neg_button_pressed), NULL);
+    g_signal_connect(base_neg_button, "released", G_CALLBACK(on_base_neg_button_released), NULL);
+    gtk_box_pack_start(GTK_BOX(base_hbox), base_neg_button, TRUE, TRUE, 0);
 
 
     //shoulder label
