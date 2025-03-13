@@ -1,5 +1,9 @@
 #include <stdio.h>
 #include <gtk/gtk.h> //for the gui
+#include <fcntl.h>
+#include <unistd.h>
+
+#define DEVICE_PATH "/dev/A37JN_Robot_arm"
 
 //booleans to keep track of when a key is pressed (to prevent repeated calling)
 static gboolean key_light_on = FALSE;
@@ -16,151 +20,171 @@ static gboolean key_claw_pos = FALSE;
 static gboolean key_claw_neg = FALSE;
 
 //every button for every motor/function of the robotic arm
-
 //for this with gtk, widgets are used for buttons
+//for turning continuously while holding button(motor movement), use on pressed and on released
 
-//for turning continueously while holding button(motor movement), use on pressed and on released
+/**
+ * Sends a command to the A37JN robot arm via the device file.
+ * @param command: The command string to send (e.g., "base:left\n").
+ * @return 0 on success, -1 on failure.
+ */
+
+int send_robot_command(const char *command) {
+    const int fd = open(DEVICE_PATH, O_WRONLY);  // Open device file for writing
+    if (fd == -1) {
+        perror("Error opening device file");
+        return -1;
+    }
+
+    const ssize_t bytes_written = write(fd, command, strlen(command));
+    if (bytes_written == -1) {
+        perror("Error writing to device file");
+        close(fd);
+        return -1;
+    }
+
+    close(fd);
+    return 0;
+}
+
 
 //light (on, off)
-static void on_light_on_button_clicked(GtkWidget *widget, gpointer data)
-{
+static void on_light_on_button_clicked(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("led:on");
     printf("Debugging: light on\n");
 }
-static void on_light_off_button_clicked(GtkWidget *widget, gpointer data)
-{
+
+static void on_light_off_button_clicked(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("led:off");
     printf("Debugging: light off\n");
 }
-
-
 
 //body (clockwise = +, anticlockwise = -)
 static void on_body_pos_button_pressed(GtkWidget *widget, gpointer data)
 {
     //call to device
+    send_robot_command("body:right");
     printf("Debugging: body turning clockwise\n");
 }
 //ask petr if this method of controlling will work with the driver
 static void on_body_pos_button_released(GtkWidget *widget, gpointer data)
 {
     //call to device
+    send_robot_command("body:stop");
     printf("Debugging: body turning clockwise stopped\n");
 }
 
-static void on_body_neg_button_pressed(GtkWidget *widget, gpointer data)
-{
+static void on_body_neg_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
-    printf("Debugging: body turninga anticlockwise\n");
+    send_robot_command("body:left");
+    printf("Debugging: body turning anticlockwise\n");
 }
 
-static void on_body_neg_button_released(GtkWidget *widget, gpointer data)
-{
+static void on_body_neg_button_released(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("body:stop");
     printf("Debugging: body turning anticlockwise stopped\n");
 }
 
-
 //shoulder (clockwise = +, anticlockwise = -)
-static void on_shoulder_pos_button_pressed(GtkWidget *widget, gpointer data)
-{
+static void on_shoulder_pos_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("shoulder:down");
     printf("Debugging: shoulder turning clockwise\n");
 }
 
-static void on_shoulder_pos_button_released(GtkWidget *widget, gpointer data)
-{
+static void on_shoulder_pos_button_released(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("shoulder:stop");
     printf("Debugging: shoulder turning clockwise stopped\n");
 }
 
-static void on_shoulder_neg_button_pressed(GtkWidget *widget, gpointer data)
-{
+static void on_shoulder_neg_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("shoulder:up");
     printf("Debugging: shoulder turning anticlockwise\n");
 }
 
-static void on_shoulder_neg_button_released(GtkWidget *widget, gpointer data)
-{
+static void on_shoulder_neg_button_released(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("shoulder:stop");
     printf("Debugging: shoulder turning anticlockwise stopped\n");
 }
 
 //elbow (clockwise = +, anticlockwise = -)
-static void on_elbow_pos_button_pressed(GtkWidget *widget, gpointer data)
-{
+static void on_elbow_pos_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("elbow:down");
     printf("Debugging: elbow turning clockwise\n");
 }
 
-static void on_elbow_pos_button_released(GtkWidget *widget, gpointer data)
-{
+static void on_elbow_pos_button_released(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("elbow:down");
     printf("Debugging: elbow turning clockwise stopped\n");
 }
 
-static void on_elbow_neg_button_pressed(GtkWidget *widget, gpointer data)
-{
+static void on_elbow_neg_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("elbow:up");
     printf("Debugging: elbow turning anticlockwise\n");
 }
 
-static void on_elbow_neg_button_released(GtkWidget *widget, gpointer data)
-{
+static void on_elbow_neg_button_released(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("elbow:stop");
     printf("Debugging: elbow turning anticlockwise stopped\n");
 }
 
-
 //wrist (clockwise = +, anticlockwise = -)
-static void on_wrist_pos_button_pressed(GtkWidget *widget, gpointer data)
-{
+static void on_wrist_pos_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("wrist:down");
     printf("Debugging: wrist turning clockwise\n");
 }
 
-static void on_wrist_pos_button_released(GtkWidget *widget, gpointer data)
-{
+static void on_wrist_pos_button_released(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("wrist:stop");
     printf("Debugging: wrist turning clockwise stopped\n");
 }
 
-static void on_wrist_neg_button_pressed(GtkWidget *widget, gpointer data)
-{
+static void on_wrist_neg_button_pressed(GtkWidget *widget, gpointer data){
     //call to device
+    send_robot_command("wrist:up");
     printf("Debugging: wrist turning anticlockwise\n");
 }
 
-static void on_wrist_neg_button_released(GtkWidget *widget, gpointer data)
-{
+static void on_wrist_neg_button_released(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("wrist:stop");
     printf("Debugging: wrist turning anticlockwise stopped\n");
 }
 
-
-
 //claw (open = +, close = -)
-static void on_claw_pos_button_pressed(GtkWidget *widget, gpointer data)
-{
+static void on_claw_pos_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("claw:open");
     printf("Debugging: claw opening\n");
 }
 
-static void on_claw_pos_button_released(GtkWidget *widget, gpointer data)
-{
+static void on_claw_pos_button_released(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("claw:stop");
     printf("Debugging: claw opening stopped\n");
 }
 
-static void on_claw_neg_button_pressed(GtkWidget *widget, gpointer data)
-{
+static void on_claw_neg_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("claw:close");
     printf("Debugging: claw closing\n");
 }
 
-static void on_claw_neg_button_released(GtkWidget *widget, gpointer data)
-{
+static void on_claw_neg_button_released(GtkWidget *widget, gpointer data) {
     //call to device
+    send_robot_command("claw:stop");
     printf("Debugging: claw closing stopped\n");
 }
 
@@ -341,7 +365,6 @@ static gboolean on_key_release(GtkWidget *widget, GdkEventKey *event, gpointer d
     }
     return FALSE;
 }
-
 
 int main(int argc, char *argv[])
 {
