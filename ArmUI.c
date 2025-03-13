@@ -1,6 +1,20 @@
 #include <stdio.h>
 #include <gtk/gtk.h> //for the gui
 
+//booleans to keep track of when a key is pressed (to prevent repeated calling)
+static gboolean key_light_on = FALSE;
+static gboolean key_light_off = FALSE;
+static gboolean key_body_pos = FALSE;
+static gboolean key_body_neg = FALSE;
+static gboolean key_shoulder_pos = FALSE;
+static gboolean key_shoulder_neg = FALSE;
+static gboolean key_elbow_pos = FALSE;
+static gboolean key_elbow_neg = FALSE;
+static gboolean key_wrist_pos = FALSE;
+static gboolean key_wrist_neg = FALSE;
+static gboolean key_claw_pos = FALSE;
+static gboolean key_claw_neg = FALSE;
+
 //every button for every motor/function of the robotic arm
 
 //for this with gtk, widgets are used for buttons
@@ -72,8 +86,6 @@ static void on_shoulder_neg_button_released(GtkWidget *widget, gpointer data)
     printf("Debugging: shoulder turning anticlockwise stopped\n");
 }
 
-//cp shoudler but change for elbow, wrist, claw 
-
 //elbow (clockwise = +, anticlockwise = -)
 static void on_elbow_pos_button_pressed(GtkWidget *widget, gpointer data)
 {
@@ -98,7 +110,6 @@ static void on_elbow_neg_button_released(GtkWidget *widget, gpointer data)
     //call to device
     printf("Debugging: elbow turning anticlockwise stopped\n");
 }
-
 
 
 //wrist (clockwise = +, anticlockwise = -)
@@ -158,41 +169,89 @@ static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer dat
 {
     switch(event->keyval)
     {
-	case GDK_KEY_1:
-            on_light_on_button_clicked(widget, data);
+        case GDK_KEY_1:
+            if(!key_light_on)
+            {
+                key_light_on = TRUE;
+                on_light_on_button_clicked(widget, data);
+            }
             break;
         case GDK_KEY_2:
-            on_light_off_button_clicked(widget, data);
+            if(!key_light_off)
+            {
+                key_light_off = TRUE;
+                on_light_off_button_clicked(widget, data);
+            }
             break;
         case GDK_KEY_k:
-            on_body_pos_button_pressed(widget, data);
+            if(!key_body_pos)
+            {
+                key_body_pos = TRUE;
+                on_body_pos_button_pressed(widget, data);
+            }
             break;
         case GDK_KEY_o:
-            on_body_neg_button_pressed(widget, data);
+            if(!key_body_neg)
+            {
+                key_body_neg = TRUE;
+                on_body_neg_button_pressed(widget, data);
+            }
             break;
         case GDK_KEY_j:
-            on_shoulder_pos_button_pressed(widget, data);
+            if(!key_shoulder_pos)
+            {
+                key_shoulder_pos = TRUE;
+                on_shoulder_pos_button_pressed(widget, data);
+            }
             break;
         case GDK_KEY_i:
-            on_shoulder_neg_button_pressed(widget, data);
+            if(!key_shoulder_neg)
+            {
+                key_shoulder_neg = TRUE;
+                on_shoulder_neg_button_pressed(widget, data);
+            }
             break;
         case GDK_KEY_f:
-            on_elbow_pos_button_pressed(widget, data);
+            if(!key_elbow_pos)
+            {
+                key_elbow_pos = TRUE;
+                on_elbow_pos_button_pressed(widget, data);
+            }
             break;
         case GDK_KEY_r:
-            on_elbow_neg_button_pressed(widget, data);
+            if(!key_elbow_neg)
+            {
+                key_elbow_neg = TRUE;
+                on_elbow_neg_button_pressed(widget, data);
+            }
             break;
         case GDK_KEY_d:
-            on_wrist_pos_button_pressed(widget, data);
+            if(!key_wrist_pos)
+            {
+                key_wrist_pos = TRUE;
+                on_wrist_pos_button_pressed(widget, data);
+            }
             break;
         case GDK_KEY_e:
-            on_wrist_neg_button_pressed(widget, data);
+            if(!key_wrist_neg)
+            {
+                key_wrist_neg = TRUE;
+                on_wrist_neg_button_pressed(widget, data);
+            }
             break;
         case GDK_KEY_s:
-            on_claw_pos_button_pressed(widget, data);
+            if(!key_claw_pos)
+            {
+                key_claw_pos = TRUE;
+                on_claw_pos_button_pressed(widget, data);
+            }
             break;
         case GDK_KEY_w:
-            on_claw_neg_button_pressed(widget, data);
+            if(!key_claw_neg)
+            {
+                key_claw_neg = TRUE;
+                on_claw_neg_button_pressed(widget, data);
+            }
             break;
     }
     return FALSE;
@@ -203,35 +262,81 @@ static gboolean on_key_release(GtkWidget *widget, GdkEventKey *event, gpointer d
 {
     switch(event->keyval)
     {
+        case GDK_KEY_1:
+            key_light_on = FALSE;
+            break;
+        case GDK_KEY_2:
+            key_light_off = FALSE;
+            break;
         case GDK_KEY_k:
-            on_body_pos_button_released(widget, data);
+            if(key_body_pos)
+            {
+                on_body_pos_button_released(widget, data);
+                key_body_pos = FALSE;
+            }
             break;
         case GDK_KEY_o:
-            on_body_neg_button_released(widget, data);
+            if(key_body_neg)
+            {
+                on_body_neg_button_released(widget, data);
+                key_body_neg = FALSE;
+            }
             break;
         case GDK_KEY_j:
-            on_shoulder_pos_button_released(widget, data);
+            if(key_shoulder_pos)
+            {
+                on_shoulder_pos_button_released(widget, data);
+                key_shoulder_pos = FALSE;
+            }
             break;
         case GDK_KEY_i:
-            on_shoulder_neg_button_released(widget, data);
+            if(key_shoulder_neg)
+            {
+                on_shoulder_neg_button_released(widget, data);
+                key_shoulder_neg = FALSE;
+            }
             break;
         case GDK_KEY_f:
-            on_elbow_pos_button_released(widget, data);
+            if(key_elbow_pos)
+            {
+                on_elbow_pos_button_released(widget, data);
+                key_elbow_pos = FALSE;
+            }
             break;
         case GDK_KEY_r:
-            on_elbow_neg_button_released(widget, data);
+            if(key_elbow_neg)
+            {
+                on_elbow_neg_button_released(widget, data);
+                key_elbow_neg = FALSE;
+            }
             break;
         case GDK_KEY_d:
-            on_wrist_pos_button_released(widget, data);
+            if(key_wrist_pos)
+            {
+                on_wrist_pos_button_released(widget, data);
+                key_wrist_pos = FALSE;
+            }
             break;
         case GDK_KEY_e:
-            on_wrist_neg_button_released(widget, data);
+            if(key_wrist_neg)
+            {
+                on_wrist_neg_button_released(widget, data);
+                key_wrist_neg = FALSE;
+            }
             break;
         case GDK_KEY_s:
-            on_claw_pos_button_released(widget, data);
+            if(key_claw_pos)
+            {
+                on_claw_pos_button_released(widget, data);
+                key_claw_pos = FALSE;
+            }
             break;
         case GDK_KEY_w:
-            on_claw_neg_button_released(widget, data);
+            if(key_claw_neg)
+            {
+                on_claw_neg_button_released(widget, data);
+                key_claw_neg = FALSE;
+            }
             break;
     }
     return FALSE;
@@ -240,10 +345,10 @@ static gboolean on_key_release(GtkWidget *widget, GdkEventKey *event, gpointer d
 
 int main(int argc, char *argv[])
 {
-    gtk_init(&argc, &argv); //initialising gtk - the gui lib I'm using
+    gtk_init(&argc, &argv); //initialising gtk - the gui lib i'm using
 
     //gui window setup
-    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL); //instantiating a window called window (so imaginative I know), TOPLEVEL allows window title etc
+    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL); //instantiating a window called window (so imaginative i know), TOPLEVEL allows window title etc
     gtk_window_set_title(GTK_WINDOW(window), "Robotic Arm Controller"); //window title
     gtk_container_set_border_width(GTK_CONTAINER(window), 20); //window border width size
 
@@ -279,7 +384,7 @@ int main(int argc, char *argv[])
     gtk_box_pack_start(GTK_BOX(light_hbox), light_off_button, TRUE, TRUE, 0);
 
 
-    //body label
+ //body label
     GtkWidget *body_label = gtk_label_new("Body");
     gtk_box_pack_start(GTK_BOX(vbox), body_label, FALSE, FALSE, 0);
 
@@ -369,7 +474,7 @@ int main(int argc, char *argv[])
     g_signal_connect(claw_pos_button, "pressed", G_CALLBACK(on_claw_pos_button_pressed), NULL);
     g_signal_connect(claw_pos_button, "released", G_CALLBACK(on_claw_pos_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(claw_hbox), claw_pos_button, TRUE, TRUE, 0);
-    //claw neg button
+    //claw neg button (pressed and released for continuous holding button)
     GtkWidget *claw_neg_button = gtk_button_new_with_label("- (w)");
     g_signal_connect(claw_neg_button, "pressed", G_CALLBACK(on_claw_neg_button_pressed), NULL);
     g_signal_connect(claw_neg_button, "released", G_CALLBACK(on_claw_neg_button_released), NULL);
@@ -381,3 +486,4 @@ int main(int argc, char *argv[])
     gtk_main(); //looping
     return 0;
 }
+
