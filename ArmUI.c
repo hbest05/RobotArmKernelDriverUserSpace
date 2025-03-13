@@ -5,12 +5,6 @@
 
 #define DEVICE_PATH "/dev/A37JN_Robot_arm"
 
-#include <stdlib.h>
-#include <linux/joystick.h>
-
-#define JOYSTICK_DEV "/dev/input/js0" // joystick driver
-#define AXIS_THRESHOLD 1000  
-
 //booleans to keep track of when a key is pressed (to prevent repeated calling)
 static gboolean key_light_on = FALSE;
 static gboolean key_light_off = FALSE;
@@ -191,33 +185,6 @@ static void on_claw_neg_button_released(GtkWidget *widget, gpointer data) {
     //call to device
     send_robot_command("claw:stop");
     printf("Debugging: claw closing stopped\n");
-}
-
-// JOYSTICK INPUTS
-if (js.type == JS_EVENT_BUTTON && js.value == 1) {
-    switch (js.number) {
-        case 6:
-            send_robot_command("led:on"); // Turns on LED
-            break;
-        case 7:
-            send_robot_command("led:off"); // Turns on LED
-            break;
-        // case 0:
-        //     printf("Trigger Activated\n");
-        //     break;
-        // case 1:
-        //     printf("Thumb Button Triggered\n");
-        //     break;
-        // case 2:
-        //     printf("Top Button 1\n");
-        //     break;
-        // case 3:
-        //     printf("Top Button 2\n");
-        //     break;
-        // default:
-        //     printf("Button %d pressed\n", js.number);
-        //     break;
-    }
 }
 
 //key press event callback
@@ -541,3 +508,4 @@ int main(int argc, char *argv[])
     gtk_main(); //looping
     return 0;
 }
+
