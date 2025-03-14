@@ -3,7 +3,11 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <linux/joystick.h>
+#include <pthread.h>
 
+#define JOYSTICK_DEV "/dev/input/js0"
+#define AXIS_THRESHOLD 1000
 #define DEVICE_PATH "/dev/A37JN_Robot_arm"
 
 //booleans to keep track of when a key is pressed (to prevent repeated calling)
@@ -332,6 +336,135 @@ static gboolean on_key_release(GtkWidget *widget, GdkEventKey *event, gpointer d
     return FALSE;
 }
 
+void* joystick_listener(void *arg) {
+    int fd = open(JOYSTICK_DEV, O_RDONLY);
+    if (fd == -1) {
+        perror("Error opening joystick");
+        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick: Disconnected");
+        pthread_exit(NULL);
+    } else {
+        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Connected");
+    }
+
+    struct js_event js;
+    printf("Joystick monitoring started on %s\n", JOYSTICK_DEV);
+
+    while (1) {
+        if (read(fd, &js, sizeof(struct js_event)) != sizeof(struct js_event)) {
+            perror("Error reading joystick event");
+            gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick disconnected");
+            close(fd);
+            pthread_exit(NULL);
+        }
+
+        if(js.type == JS_EVENT_BUTTON) {
+            if(js.value == 1) {
+                switch (js.number) {
+                    case 6:
+                        send_robot_command("led:on");
+                        printf("Joystick: Lights ON\n");
+                        break;
+                    case 7:
+                        send_robot_command("led:off");
+                        printf("Joystick: Lights OFF\n");
+                        break;
+                    default:
+                        printf("Joystick Button %d pressed\n", js.number);
+                        break;
+                }
+            }
+        }
+
+        // Intuitive handling for axes based on your joystick setup
+        if(js.type == JS_EVENT_AXIS) {
+            switch(js.number) {
+                case 0: // Axis 0: Base rotation left/right
+                    if(js.value < -AXIS_THRESHOLD) {
+                        send_robot_command("base:left");
+                        printf("Axis 0: Base rotating left\n");
+                    } else if(js.value > AXIS_THRESHOLD) {
+                        send_robot_command("base:right");
+                        printf("Axis 0: Base rotating right\n");
+                    } else {
+                        send_robot_command("base:stop");
+                        printf("Axis 0: Base stopped\n");
+                    }
+                    break;
+
+                case 1: // Axis 1: Shoulder movement forward/backward
+                    if(js.value < -AXIS_THRESHOLD) {
+                        send_robot_command("shoulder:up");
+                        printf("Axis 1: Shoulder moving up\n");
+                    } else if(js.value > AXIS_THRESHOLD) {
+                        send_robot_command("shoulder:down");
+                        printf("Axis 1: Shoulder moving down\n");
+                    } else {
+                        send_robot_command("shoulder:stop");
+                        printf("Axis 1: Shoulder stopped\n");
+                    }
+                    break;
+
+                case 2: // Axis 2: Claw open/close (throttle at base)
+                    if(js.value < -AXIS_THRESHOLD) {
+                        send_robot_command("claw:open");
+                        printf("Axis 2: Claw opening\n");
+                    } else if(js.value > AXIS_THRESHOLD) {
+                        send_robot_command("claw:close");
+                        printf("Axis 2: Claw closing\n");
+                    } else {
+                        send_robot_command("claw:stop");
+                        printf("Axis 2: Claw stopped\n");
+                    }
+                    break;
+
+                case 3: // Axis 3: Wrist rotation (stick twist)
+                    if(js.value < -AXIS_THRESHOLD) {
+                        send_robot_command("wrist:up");
+                        printf("Axis 3: Wrist moving up\n");
+                    } else if(js.value > AXIS_THRESHOLD) {
+                        send_robot_command("wrist:down");
+                        printf("Axis 3: Wrist moving down\n");
+                    } else {
+                        send_robot_command("wrist:stop");
+                        printf("Axis 3: Wrist stopped\n");
+                    }
+                    break;
+
+                case 4: // Axis 4: Elbow control (mini-stick horizontal)
+                    if(js.value < -AXIS_THRESHOLD) {
+                        send_robot_command("elbow:up");
+                        printf("Axis 4: Elbow moving up\n");
+                    } else if(js.value > AXIS_THRESHOLD) {
+                        send_robot_command("elbow:down");
+                        printf("Axis 4: Elbow moving down\n");
+                    } else {
+                        send_robot_command("elbow:stop");
+                        printf("Axis 4: Elbow stopped\n");
+                    }
+                    break;
+
+                case 5: // Axis 5: (optional) mini-stick vertical - Could control lights or be left unused
+                    if(js.value < -AXIS_THRESHOLD) {
+                        send_robot_command("led:on");
+                        printf("Axis 5: Lights ON\n");
+                    } else if(js.value > AXIS_THRESHOLD) {
+                        send_robot_command("led:off");
+                        printf("Axis 5: Lights OFF\n");
+                    }
+                    break;
+
+                default:
+                    printf("Unhandled Axis %d value=%d\n", js.number, js.value);
+                    break;
+            }
+        }
+        usleep(5000);
+    }
+
+    close(fd);
+    return NULL;
+}
+
 int main(int argc, char *argv[])
 {
     gtk_init(&argc, &argv); //initialising gtk - the gui lib i'm using
@@ -499,6 +632,14 @@ int main(int argc, char *argv[])
     joystick_connection_label = gtk_label_new(joystick_connection_string);
     gtk_box_pack_start(GTK_BOX(vbox_right), joystick_connection_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(joystick_connection_label, GTK_ALIGN_START);
+
+    pthread_t joystick_thread;
+    if (pthread_create(&joystick_thread, NULL, joystick_listener, NULL) != 0) {
+        perror("Failed to create joystick thread");
+        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick thread failed");
+    } else {
+        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick connected");
+    }
 
     gtk_widget_show_all(window);
     gtk_main();
