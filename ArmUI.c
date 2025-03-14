@@ -542,6 +542,7 @@ int main(int argc, char *argv[])
     //right side vbox for text entry and status updates
     GtkWidget *vbox_right = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5); //5 pixel spacing
     gtk_box_pack_start(GTK_BOX(hbox_main), vbox_right, TRUE, TRUE, 0);
+    gtk_widget_set_margin_start(vbox_right, 20);
 
     //light label
     GtkWidget *light_label = gtk_label_new("Light");
@@ -650,11 +651,6 @@ int main(int argc, char *argv[])
     gtk_box_pack_start(GTK_BOX(claw_hbox), claw_neg_button, TRUE, TRUE, 0);
 
     //right side vbox
-    //status update: battery status
-    //update/check battery
-    battery_label = gtk_label_new("Battery: 0/4");
-    gtk_box_pack_start(GTK_BOX(vbox_right), battery_label, FALSE, FALSE, 0);
-    gtk_widget_set_halign(battery_label, GTK_ALIGN_START);
     
     //label for ioctl input field
     GtkWidget *ioctl_label = gtk_label_new("IOCTL command input:");
@@ -667,24 +663,35 @@ int main(int argc, char *argv[])
     g_signal_connect(text_entry, "activate", G_CALLBACK(on_text_entry_submit), NULL);
     gtk_box_pack_start(GTK_BOX(vbox_right), text_entry, FALSE, FALSE, 0);
     gtk_widget_set_halign(text_entry, GTK_ALIGN_START);
+    gtk_widget_set_margin_bottom(text_entry, 10);
 
     //label for command status
     GtkWidget *command_status_label = gtk_label_new("Command status: none");
     gtk_box_pack_start(GTK_BOX(vbox_right), command_status_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(command_status_label, GTK_ALIGN_START);
-
+    gtk_widget_set_margin_bottom(command_status_label, 10);
 
     //status update: arm connection status
     //update/check arm connection
     arm_connection_label = gtk_label_new("Arm status: disconnected");
     gtk_box_pack_start(GTK_BOX(vbox_right), arm_connection_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(arm_connection_label, GTK_ALIGN_START);
-    
+    gtk_widget_set_margin_bottom(arm_connection_label, 10);
+
     //status update: external input status
     //update/check joystick connection
     joystick_connection_label = gtk_label_new(joystick_connection_string);
     gtk_box_pack_start(GTK_BOX(vbox_right), joystick_connection_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(joystick_connection_label, GTK_ALIGN_START);
+    gtk_widget_set_margin_bottom(joystick_connection_label, 10);
+
+    //status update: battery status
+    //update/check battery
+    battery_label = gtk_label_new("Battery: 0/4");
+    gtk_box_pack_start(GTK_BOX(vbox_right), battery_label, FALSE, FALSE, 0);
+    gtk_widget_set_halign(battery_label, GTK_ALIGN_START);
+    gtk_widget_set_margin_bottom(battery_label, 10);
+
 
     gtk_widget_show_all(window);
     gtk_main();
