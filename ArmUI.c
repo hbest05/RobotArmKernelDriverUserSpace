@@ -6,6 +6,8 @@
 
 #define DEVICE_PATH "/dev/A37JN_Robot_arm"
 
+//holly checking if github working on vm :)
+
 //booleans to keep track of when a key is pressed (to prevent repeated calling)
 static gboolean key_light_on = FALSE;
 static gboolean key_light_off = FALSE;
