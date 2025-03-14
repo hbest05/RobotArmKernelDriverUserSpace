@@ -60,24 +60,34 @@ void read_robot_status() {
     char status[4];
     int battery = 0;
 
-    if (sscanf(buffer, "connected:%3s status:%4s battery:%d", connected, status, &battery) != 3) {
+    if (sscanf(buffer, "connected:%4s status:%4s battery:%d", connected, status, &battery) != 3) {
         close(fd);
         return;
     }
 
-    if (strcmp(status, "yes") == 0) {
-        strcpy(arm_connection_string, "Arm status: Connected");
+    char *final_connected_string;  // Declare outside
+
+    if (strcmp(connected, "yes") == 0) {
+        final_connected_string = "Connected";
     } else {
-        strcpy(arm_connection_string, "Arm status: Disconnected");
+        final_connected_string = "Disconnected";
     }
 
+    gchar *new_label_text = g_strdup_printf("Arm status: %s", final_connected_string);
+    gtk_label_set_text(GTK_LABEL(arm_connection_label), new_label_text);
+    g_free(new_label_text);  // Free allocated memory
+
+
+    char *final_Command_String[16];
     if (strcmp(status, "good") == 0) {
-        strcpy(command_status_string, "Good");
+        *final_Command_String = "Good";
     } else if (strcmp(status, "bad") == 0) {
-        strcpy(command_status_string, "Bad");
+        *final_Command_String = "Bad";
     } else {
-        strcpy(command_status_string, "None");
+        *final_Command_String = "None";
     }
+
+
 
     if (battery < 5 && battery > -1) {
         gchar *new_label_text = g_strdup_printf("Battery: %d/4", battery);
@@ -93,6 +103,7 @@ void read_robot_status() {
  * @param command: The command string to send (e.g., "base:left\n").
  * @return 0 on success, -1 on failure.
  */
+
 int send_robot_command(const char *command) {
     const int fd = open(DEVICE_PATH, O_WRONLY);  // Open device file for writing
     if (fd == -1) {
