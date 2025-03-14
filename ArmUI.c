@@ -30,6 +30,7 @@ static gboolean key_claw_neg = FALSE;
 GtkWidget *battery_label;
 GtkWidget *arm_connection_label;
 GtkWidget *joystick_connection_label;
+GtkWidget *command_status_label;
 
 //initialising statuses
 int battery_status = 0;
@@ -428,107 +429,86 @@ void* joystick_listener(void *arg) {
             pthread_exit(NULL);
         }
 
-        if(js.type == JS_EVENT_BUTTON) {
-            if(js.value == 1) {
-                switch (js.number) {
-                    case 6:
-                        send_robot_command("led:on");
-                        printf("Joystick: Lights ON\n");
-                        break;
-                    case 7:
-                        send_robot_command("led:off");
-                        printf("Joystick: Lights OFF\n");
-                        break;
-                    default:
-                        printf("Joystick Button %d pressed\n", js.number);
-                        break;
-                }
+        if(js.type == JS_EVENT_BUTTON && js.value == 1) { // Button pressed
+            switch (js.number) {
+                case 0:
+                    send_robot_command("claw:close");
+                    printf("Claw Close\n");
+                    break;
+
+                case 1:
+                    send_robot_command("claw:open");
+                    printf("Claw opening\n");
+                    break;
+
+                case 2:
+                    send_robot_command("wrist:down");
+                    printf("Debugging: wrist down\n");
+                    break;
+
+                case 3:
+                    send_robot_command("led:on");
+                    printf("Joystick: Lights ON\n");
+                    break;
+
+                case 4:
+                    send_robot_command("wrist:up");
+                    printf("Debugging: wrist up\n");
+                    break;
+                
+                case 5:
+                    send_robot_command("led:off");
+                    printf("Joystick: Lights OFF\n");
+                    break;
+
+                default:
+                    printf("Joystick Button %d pressed\n", js.number);
+                    break;
             }
         }
 
-        // Intuitive handling for axes based on your joystick setup
-        // if(js.type == JS_EVENT_AXIS) {
-        //     switch(js.number) {
-        //         case 0: // Axis 0: Base rotation left/right
-        //             if(js.value < -AXIS_THRESHOLD) {
-        //                 send_robot_command("base:left");
-        //                 printf("Axis 0: Base rotating left\n");
-        //             } else if(js.value > AXIS_THRESHOLD) {
-        //                 send_robot_command("base:right");
-        //                 printf("Axis 0: Base rotating right\n");
-        //             } else {
-        //                 send_robot_command("base:stop");
-        //                 printf("Axis 0: Base stopped\n");
-        //             }
-        //             break;
+        if(js.type == JS_EVENT_AXIS) {
+            switch(js.number) {
+                case 1: // Shoulder tilt forward/backward
+                    if(js.value == 32767) {
+                        send_robot_command("shoulder:up");
+                        printf("Axis 1: Shoulder UP\n");
+                    } else if(js.value == -32767) {
+                        send_robot_command("shoulder:down");
+                        printf("Axis 1: Shoulder DOWN\n");
+                    } else {
+                        send_robot_command("shoulder:stop");
+                        // printf("Axis 1: Shoulder stopped\n");
+                    }
+                    break;
 
-        //         case 1: // Axis 1: Shoulder movement forward/backward
-        //             if(js.value < -AXIS_THRESHOLD) {
-        //                 send_robot_command("shoulder:up");
-        //                 printf("Axis 1: Shoulder moving up\n");
-        //             } else if(js.value > AXIS_THRESHOLD) {
-        //                 send_robot_command("shoulder:down");
-        //                 printf("Axis 1: Shoulder moving down\n");
-        //             } else {
-        //                 send_robot_command("shoulder:stop");
-        //                 printf("Axis 1: Shoulder stopped\n");
-        //             }
-        //             break;
+                case 3: // Turning left/right
+                    if(js.value == -32767) {
+                        send_robot_command("base:left");
+                        printf("Axis 3: Base rotating LEFT\n");
+                    } else if(js.value == 32767) {
+                        send_robot_command("base:right");
+                        printf("Axis 3: Base rotating RIGHT\n");
+                    } else {
+                        send_robot_command("base:stop");
+                        // printf("Axis 3: Base stopped\n");
+                    }
+                    break;
 
-        //         case 2: // Axis 2: Claw open/close (throttle at base)
-        //             if(js.value < -AXIS_THRESHOLD) {
-        //                 send_robot_command("claw:open");
-        //                 printf("Axis 2: Claw opening\n");
-        //             } else if(js.value > AXIS_THRESHOLD) {
-        //                 send_robot_command("claw:close");
-        //                 printf("Axis 2: Claw closing\n");
-        //             } else {
-        //                 send_robot_command("claw:stop");
-        //                 printf("Axis 2: Claw stopped\n");
-        //             }
-        //             break;
-
-        //         case 3: // Axis 3: Wrist rotation (stick twist)
-        //             if(js.value < -AXIS_THRESHOLD) {
-        //                 send_robot_command("wrist:up");
-        //                 printf("Axis 3: Wrist moving up\n");
-        //             } else if(js.value > AXIS_THRESHOLD) {
-        //                 send_robot_command("wrist:down");
-        //                 printf("Axis 3: Wrist moving down\n");
-        //             } else {
-        //                 send_robot_command("wrist:stop");
-        //                 printf("Axis 3: Wrist stopped\n");
-        //             }
-        //             break;
-
-        //         case 4: // Axis 4: Elbow control (mini-stick horizontal)
-        //             if(js.value < -AXIS_THRESHOLD) {
-        //                 send_robot_command("elbow:up");
-        //                 printf("Axis 4: Elbow moving up\n");
-        //             } else if(js.value > AXIS_THRESHOLD) {
-        //                 send_robot_command("elbow:down");
-        //                 printf("Axis 4: Elbow moving down\n");
-        //             } else {
-        //                 send_robot_command("elbow:stop");
-        //                 printf("Axis 4: Elbow stopped\n");
-        //             }
-        //             break;
-
-        //         case 5: // Axis 5: (optional) mini-stick vertical - Could control lights or be left unused
-        //             if(js.value < -AXIS_THRESHOLD) {
-        //                 send_robot_command("led:on");
-        //                 printf("Axis 5: Lights ON\n");
-        //             } else if(js.value > AXIS_THRESHOLD) {
-        //                 send_robot_command("led:off");
-        //                 printf("Axis 5: Lights OFF\n");
-        //             }
-        //             break;
-
-        //         default:
-        //             printf("Unhandled Axis %d value=%d\n", js.number, js.value);
-        //             break;
-        //     }
-        // }
+                case 4: // Elbow control
+                    if(js.value == -32767) {
+                        send_robot_command("elbow:up");
+                        printf("Axis 4: Elbow UP\n");
+                    } else if(js.value == 32767) {
+                        send_robot_command("elbow:down");
+                        printf("Axis 4: Elbow DOWN\n");
+                    } else {
+                        send_robot_command("elbow:stop");
+                        // printf("Axis 4: Elbow stopped\n");
+                    }
+                    break;
+            }
+        }
         usleep(5000);
     }
 
@@ -687,6 +667,12 @@ int main(int argc, char *argv[])
     g_signal_connect(text_entry, "activate", G_CALLBACK(on_text_entry_submit), NULL);
     gtk_box_pack_start(GTK_BOX(vbox_right), text_entry, FALSE, FALSE, 0);
     gtk_widget_set_halign(text_entry, GTK_ALIGN_START);
+
+    //label for command status
+    GtkWidget *command_status_label = gtk_label_new("Command status: none");
+    gtk_box_pack_start(GTK_BOX(vbox_right), command_status_label, FALSE, FALSE, 0);
+    gtk_widget_set_halign(command_status_label, GTK_ALIGN_START);
+
 
     //status update: arm connection status
     //update/check arm connection
