@@ -30,6 +30,7 @@ static gboolean key_claw_neg = FALSE;
 GtkWidget *battery_label;
 GtkWidget *arm_connection_label;
 GtkWidget *joystick_connection_label;
+GtkWidget *command_status_label;
 
 //initialising statuses
 int battery_status = 0;
@@ -676,6 +677,12 @@ int main(int argc, char *argv[])
     g_signal_connect(text_entry, "activate", G_CALLBACK(on_text_entry_submit), NULL);
     gtk_box_pack_start(GTK_BOX(vbox_right), text_entry, FALSE, FALSE, 0);
     gtk_widget_set_halign(text_entry, GTK_ALIGN_START);
+
+    //label for command status
+    GtkWidget *command_status_label = gtk_label_new("Command status: none");
+    gtk_box_pack_start(GTK_BOX(vbox_right), command_status_label, FALSE, FALSE, 0);
+    gtk_widget_set_halign(command_status_label, GTK_ALIGN_START);
+
 
     //status update: arm connection status
     //update/check arm connection
