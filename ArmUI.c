@@ -33,36 +33,15 @@ GtkWidget *joystick_connection_label;
 
 //initialising statuses
 int battery_status = 0;
-char *arm_connection_string = "Arm status: disconnected";
-char *command_status_string = "None";
-char *joystick_connection_string = "Joystick status: disconnected";
-
-/**
- * Sends a command to the A37JN robot arm via the device file.
- * @param command: The command string to send (e.g., "base:left\n").
- * @return 0 on success, -1 on failure.
- */
-int send_robot_command(const char *command) {
-    const int fd = open(DEVICE_PATH, O_WRONLY);  // Open device file for writing
-    if (fd == -1) {
-        perror("Error opening device file");
-        return -1;
-    }
-    const ssize_t bytes_written = write(fd, command, strlen(command));
-    if (bytes_written == -1) {
-        perror("Error writing to device file");
-        close(fd);
-        return -1;
-    }
-    close(fd);
-    return 0;
-}
+char arm_connection_string[32] = "Arm status: disconnected";
+char command_status_string[16] = "None";
+char joystick_connection_string[32] = "Joystick status: disconnected";
 
 void read_robot_status() {
 
     char buffer[512];
 
-    const int fd = open(DEVICE_PATH, O_WRONLY);  // Open device file for writing
+    const int fd = open(DEVICE_PATH, O_RDONLY);  // Open device file for writing
     if (fd == -1) {
         perror("Error opening device file");
         return;
@@ -81,30 +60,54 @@ void read_robot_status() {
     char status[4];
     int battery = 0;
 
-    if (sscanf(buffer, "connected:%3s status:%4s battery:%d", connected, status, battery) != 3) {
+    if (sscanf(buffer, "connected:%3s status:%4s battery:%d", connected, status, &battery) != 3) {
         close(fd);
         return;
     }
 
     if (strcmp(status, "yes") == 0) {
-        *arm_connection_string = "Arm status: Connected";
+        strcpy(arm_connection_string, "Arm status: Connected");
     } else {
-        *arm_connection_string = "Arm status: Disconnected";
+        strcpy(arm_connection_string, "Arm status: Disconnected");
     }
 
     if (strcmp(status, "good") == 0) {
-        *command_status_string = "Good";
+        strcpy(command_status_string, "Good");
     } else if (strcmp(status, "bad") == 0) {
-        *command_status_string = "Bad";
+        strcpy(command_status_string, "Bad");
     } else {
-        *command_status_string = "None";
+        strcpy(command_status_string, "None");
     }
 
     if (battery < 5 && battery > -1) {
-        battery_status = battery;
+        gchar *new_label_text = g_strdup_printf("Battery: %d/4", battery);
+        gtk_label_set_text(GTK_LABEL(battery_label), new_label_text);
+        g_free(new_label_text);  // Free allocated memory
     }
 
     close(fd);
+}
+
+/**
+ * Sends a command to the A37JN robot arm via the device file.
+ * @param command: The command string to send (e.g., "base:left\n").
+ * @return 0 on success, -1 on failure.
+ */
+int send_robot_command(const char *command) {
+    const int fd = open(DEVICE_PATH, O_WRONLY);  // Open device file for writing
+    if (fd == -1) {
+        perror("Error opening device file");
+        return -1;
+    }
+    const ssize_t bytes_written = write(fd, command, strlen(command));
+    if (bytes_written == -1) {
+        perror("Error writing to device file");
+        close(fd);
+        return -1;
+    }
+    read_robot_status();
+    close(fd);
+    return 0;
 }
 
 //direct command input (ioctl)
@@ -657,8 +660,8 @@ int main(int argc, char *argv[])
 
     //right side vbox
     //status update: battery status
-   //update/check battery
-    battery_label = gtk_label_new(g_strdup_printf("Battery: %d/4", battery_status));
+    //update/check battery
+    battery_label = gtk_label_new("Battery: 0/4");
     gtk_box_pack_start(GTK_BOX(vbox_right), battery_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(battery_label, GTK_ALIGN_START);
     
@@ -666,6 +669,7 @@ int main(int argc, char *argv[])
     GtkWidget *ioctl_label = gtk_label_new("IOCTL command input:");
     gtk_box_pack_start(GTK_BOX(vbox_right), ioctl_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(ioctl_label, GTK_ALIGN_START);
+
     //text entry for ioctl input
     GtkWidget *text_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(text_entry), "Enter direct command...");
@@ -674,9 +678,8 @@ int main(int argc, char *argv[])
     gtk_widget_set_halign(text_entry, GTK_ALIGN_START);
 
     //status update: arm connection status
-    gboolean arm_connected = FALSE;
     //update/check arm connection
-    arm_connection_label = gtk_label_new(arm_connection_string);
+    arm_connection_label = gtk_label_new("Arm status: disconnected");
     gtk_box_pack_start(GTK_BOX(vbox_right), arm_connection_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(arm_connection_label, GTK_ALIGN_START);
     
