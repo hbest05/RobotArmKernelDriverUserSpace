@@ -124,9 +124,11 @@ int send_robot_command(const char *command) {
 
 //direct command input (ioctl)
 static void on_text_entry_submit(GtkWidget *widget, gpointer data) {
-    const gchar *input = gtk_entry_get_text(GTK_ENTRY(widget));
+    GtkWidget *entry = GTK_WIDGET(data);
+    const gchar *input = gtk_entry_get_text(GTK_ENTRY(entry));
     printf("Debugging: received input: %s\n", input);
     //call to device.. would it use  send_robot_command() also?
+    gtk_entry_set_text(GTK_ENTRY(entry), "");
 }
 
 //light (on, off)
@@ -652,18 +654,27 @@ int main(int argc, char *argv[])
 
     //right side vbox
     
-    //label for ioctl input field
+    ///label for ioctl input field
     GtkWidget *ioctl_label = gtk_label_new("IOCTL command input:");
     gtk_box_pack_start(GTK_BOX(vbox_right), ioctl_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(ioctl_label, GTK_ALIGN_START);
 
+    //hbox for both the text entry and send button
+    GtkWidget *ioctl_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_box_pack_start(GTK_BOX(vbox_right), ioctl_hbox, FALSE, FALSE, 0);
+
     //text entry for ioctl input
     GtkWidget *text_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(text_entry), "Enter direct command...");
-    g_signal_connect(text_entry, "activate", G_CALLBACK(on_text_entry_submit), NULL);
-    gtk_box_pack_start(GTK_BOX(vbox_right), text_entry, FALSE, FALSE, 0);
+    g_signal_connect(text_entry, "activate", G_CALLBACK(on_text_entry_submit), text_entry);
+    gtk_box_pack_start(GTK_BOX(ioctl_hbox), text_entry, TRUE, TRUE, 0);
     gtk_widget_set_halign(text_entry, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(text_entry, 10);
+
+    //send button for ioctl input
+    GtkWidget *send_button = gtk_button_new_with_label("Send");
+    g_signal_connect(send_button, "clicked", G_CALLBACK(on_text_entry_submit), text_entry);
+    gtk_box_pack_start(GTK_BOX(ioctl_hbox), send_button, FALSE, FALSE, 0);
 
     //label for command status
     GtkWidget *command_status_label = gtk_label_new("Command status: none");
