@@ -61,7 +61,7 @@ void read_robot_status() {
 
     buffer[bytes_read] = '\0';
 
-    printf("%s", buffer);
+    //printf("%s", buffer);
 
     char connected[4];
     char status[4];
@@ -77,7 +77,7 @@ void read_robot_status() {
     // Actually convert String to int the proper way
     const int battery_level = (int) strtol(battery, NULL, 10);
 
-    printf("connected:%s status:%s battery:%d\n", connected, status, battery_level);
+    //printf("connected:%s status:%s battery:%d\n", connected, status, battery_level);
 
     char *final_connected_string;  // Declare outside
 
