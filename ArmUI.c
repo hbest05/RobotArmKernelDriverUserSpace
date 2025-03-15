@@ -9,6 +9,8 @@
 
 // Path to robot arm
 #define DEVICE_PATH "/dev/A37JN_Robot_arm"
+#define MAGIC_NUM 0x80
+#define IOCTL_SET_VALUE _IOW(MAGIC_NUM, 1, struct device_command)
 
 // Depends on system (is hardcoded for now)
 #define JOYSTICK_DEV "/dev/input/js1"
@@ -124,7 +126,7 @@ int send_robot_command(const char *command) {
     printf("Sending command: %s\n", command);
 
     const int fd = open(DEVICE_PATH, O_WRONLY);  // Open device file for writing
-    if (fd == -1) {
+    if (fd < 0) {
         perror("Error opening device file");
         return -1;
     }
@@ -139,13 +141,48 @@ int send_robot_command(const char *command) {
     return 0;
 }
 
+struct device_command {
+    int var1;
+    int var2;
+    int var3;
+};
+
 //direct command input (ioctl)
 static void on_text_entry_submit(GtkWidget *widget, gpointer data) {
+
     GtkWidget *entry = GTK_WIDGET(data);
     const gchar *input = gtk_entry_get_text(GTK_ENTRY(entry));
     printf("Debugging: received input: %s\n", input);
+
+    struct device_command cmd;
+
+    // Parse input (Expected format: "128,2,0")
+    if (sscanf(input, "%d,%d,%d", &cmd.var1, &cmd.var2, &cmd.var3) != 3) {
+        printf("Error: Invalid input format. Expected: var1,var2,var3\n");
+        return;
+    }
+
+    const int fd = open(DEVICE_PATH, O_WRONLY);  // Open device file for writing
+    if (fd < 0) {
+        perror("Error opening device file");
+        return;
+    }
+
+    printf("Debugging: Sending command: %d,%d,%d\n", cmd.var1, cmd.var2, cmd.var3);
+
+    if (ioctl(fd, IOCTL_SET_VALUE, &cmd) == -1) {
+        perror("ioctl failed");
+        close(fd);
+        return;
+    }
+
+    printf("Sent ioctl command: var1=%d, var2=%d, var3=%d\n", cmd.var1, cmd.var2, cmd.var3);
+
+    close(fd);
+
     //call to device... would it use  send_robot_command() also?
     gtk_entry_set_text(GTK_ENTRY(entry), "");
+
 }
 
 //light (on, off)
@@ -248,11 +285,11 @@ static void on_claw_button_released(GtkWidget *widget, gpointer data) {
 }
 
 //key press event callback
-static void on_key_press(GtkWidget *widget, const GdkEventKey *event, gpointer data) {
+static gboolean on_key_press(GtkWidget *widget, const GdkEventKey *event, gpointer data) {
 
     // Implemented keyboard block
     if (!keyboard_enabled) {
-        return;
+        return FALSE;
     }
 
     switch (event->keyval) {
@@ -341,11 +378,8 @@ static void on_key_press(GtkWidget *widget, const GdkEventKey *event, gpointer d
             }
             break;
 
-        default:
-            // Ignore all other key presses
-            return;
-
     }
+    return FALSE;
 }
 
 //key release event callback
@@ -430,9 +464,6 @@ static void on_key_release(GtkWidget *widget, const GdkEventKey *event, gpointer
             }
             break;
 
-        default:
-            // Ignore all other key presses
-            return;
     }
 }
 
