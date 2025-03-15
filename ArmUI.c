@@ -343,7 +343,7 @@ static void on_key_press(GtkWidget *widget, const GdkEventKey *event, gpointer d
 
         default:
             // Ignore all other key presses
-                return;
+            return;
 
     }
 }
