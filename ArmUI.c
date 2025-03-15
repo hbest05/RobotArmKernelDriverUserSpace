@@ -5,12 +5,19 @@
 #include <string.h>
 #include <linux/joystick.h>
 #include <pthread.h>
+#include <stdbool.h>
 
-#define JOYSTICK_DEV "/dev/input/js1"
-#define AXIS_THRESHOLD 1000
+// Path to robot arm
 #define DEVICE_PATH "/dev/A37JN_Robot_arm"
 
-//holly checking if github working on vm :)
+// Depends on system (is hardcoded for now)
+#define JOYSTICK_DEV "/dev/input/js1"
+#define AXIS_THRESHOLD 1000
+
+//holly checking if GitHub working on vm :)
+
+static bool keyboard_enabled = TRUE;
+static bool joystick_enabled = TRUE;
 
 //booleans to keep track of when a key is pressed (to prevent repeated calling)
 static gboolean key_light_on = FALSE;
@@ -34,9 +41,6 @@ GtkWidget *command_status_label;
 
 //initialising statuses
 int battery_status = 0;
-char arm_connection_string[32] = "Arm status: disconnected";
-char command_status_string[16] = "None";
-char joystick_connection_string[32] = "Joystick status: disconnected";
 
 void read_robot_status() {
 
@@ -57,14 +61,23 @@ void read_robot_status() {
 
     buffer[bytes_read] = '\0';
 
+    printf("%s", buffer);
+
     char connected[4];
     char status[4];
-    int battery = 0;
+    char battery[2];
 
-    if (sscanf(buffer, "connected:%4s status:%4s battery:%d", connected, status, &battery) != 3) {
+    if (sscanf(buffer, "connected:%4s status:%4s battery:%1s", connected, status, battery) != 3) {
         close(fd);
         return;
     }
+
+    close(fd);
+
+    // Actually convert String to int the proper way
+    const int battery_level = (int) strtol(battery, NULL, 10);
+
+    printf("connected:%s status:%s battery:%d\n", connected, status, battery_level);
 
     char *final_connected_string;  // Declare outside
 
@@ -78,25 +91,26 @@ void read_robot_status() {
     gtk_label_set_text(GTK_LABEL(arm_connection_label), new_label_text);
     g_free(new_label_text);  // Free allocated memory
 
+    char *final_Command_String;
 
-    char *final_Command_String[16];
     if (strcmp(status, "good") == 0) {
-        *final_Command_String = "Good";
+        final_Command_String = "Good";
     } else if (strcmp(status, "bad") == 0) {
-        *final_Command_String = "Bad";
+        final_Command_String = "Bad";
     } else {
-        *final_Command_String = "None";
+        final_Command_String = "None";
     }
 
+    gchar *new_label_text2 = g_strdup_printf("Command status: %s", final_Command_String);
+    gtk_label_set_text(GTK_LABEL(command_status_label), new_label_text2);
+    g_free(new_label_text2);  // Free allocated memory
 
-
-    if (battery < 5 && battery > -1) {
-        gchar *new_label_text = g_strdup_printf("Battery: %d/4", battery);
-        gtk_label_set_text(GTK_LABEL(battery_label), new_label_text);
-        g_free(new_label_text);  // Free allocated memory
+    if (battery_level < 5 && battery_level > -1) {
+        gchar *new_label_text3 = g_strdup_printf("Battery: %d/4", battery_level);
+        gtk_label_set_text(GTK_LABEL(battery_label), new_label_text3);
+        g_free(new_label_text3);  // Free allocated memory
     }
 
-    close(fd);
 }
 
 /**
@@ -106,6 +120,9 @@ void read_robot_status() {
  */
 
 int send_robot_command(const char *command) {
+
+    printf("Sending command: %s\n", command);
+
     const int fd = open(DEVICE_PATH, O_WRONLY);  // Open device file for writing
     if (fd == -1) {
         perror("Error opening device file");
@@ -127,7 +144,7 @@ static void on_text_entry_submit(GtkWidget *widget, gpointer data) {
     GtkWidget *entry = GTK_WIDGET(data);
     const gchar *input = gtk_entry_get_text(GTK_ENTRY(entry));
     printf("Debugging: received input: %s\n", input);
-    //call to device.. would it use  send_robot_command() also?
+    //call to device... would it use  send_robot_command() also?
     gtk_entry_set_text(GTK_ENTRY(entry), "");
 }
 
@@ -149,7 +166,6 @@ static void on_base_pos_button_pressed(GtkWidget *widget, gpointer data) {
     send_robot_command("base:right");
     printf("Debugging: base turning clockwise\n");
 }
-
 static void on_base_neg_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
     send_robot_command("base:left");
@@ -168,7 +184,6 @@ static void on_shoulder_pos_button_pressed(GtkWidget *widget, gpointer data) {
     send_robot_command("shoulder:up");
     printf("Debugging: shoulder opening\n");
 }
-
 static void on_shoulder_neg_button_pressed(GtkWidget *widget, gpointer data) {
     //call to device
     send_robot_command("shoulder:down");
@@ -233,184 +248,196 @@ static void on_claw_button_released(GtkWidget *widget, gpointer data) {
 }
 
 //key press event callback
-static gboolean on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer data)
-{
-    switch(event->keyval)
-    {
+static void on_key_press(GtkWidget *widget, const GdkEventKey *event, gpointer data) {
+
+    // Implemented keyboard block
+    if (!keyboard_enabled) {
+        return;
+    }
+
+    switch (event->keyval) {
+
         case GDK_KEY_1:
-            if(!key_light_on)
-            {
+            if(!key_light_on) {
                 key_light_on = TRUE;
                 on_light_on_button_clicked(widget, data);
             }
             break;
+
         case GDK_KEY_2:
-            if(!key_light_off)
-            {
+            if(!key_light_off) {
                 key_light_off = TRUE;
                 on_light_off_button_clicked(widget, data);
             }
             break;
+
         case GDK_KEY_k:
-            if(!key_base_pos)
-            {
+            if(!key_base_pos) {
                 key_base_pos = TRUE;
                 on_base_pos_button_pressed(widget, data);
             }
             break;
+
         case GDK_KEY_o:
-            if(!key_base_neg)
-            {
+            if(!key_base_neg) {
                 key_base_neg = TRUE;
                 on_base_neg_button_pressed(widget, data);
             }
             break;
+
         case GDK_KEY_j:
-            if(!key_shoulder_pos)
-            {
+            if(!key_shoulder_pos) {
                 key_shoulder_pos = TRUE;
                 on_shoulder_pos_button_pressed(widget, data);
             }
             break;
+
         case GDK_KEY_i:
-            if(!key_shoulder_neg)
-            {
+            if(!key_shoulder_neg) {
                 key_shoulder_neg = TRUE;
                 on_shoulder_neg_button_pressed(widget, data);
             }
             break;
+
         case GDK_KEY_f:
-            if(!key_elbow_pos)
-            {
+            if(!key_elbow_pos) {
                 key_elbow_pos = TRUE;
                 on_elbow_pos_button_pressed(widget, data);
             }
             break;
+
         case GDK_KEY_r:
-            if(!key_elbow_neg)
-            {
+            if(!key_elbow_neg) {
                 key_elbow_neg = TRUE;
                 on_elbow_neg_button_pressed(widget, data);
             }
             break;
+
         case GDK_KEY_d:
-            if(!key_wrist_pos)
-            {
+            if(!key_wrist_pos) {
                 key_wrist_pos = TRUE;
                 on_wrist_pos_button_pressed(widget, data);
             }
             break;
+
         case GDK_KEY_e:
-            if(!key_wrist_neg)
-            {
+            if(!key_wrist_neg) {
                 key_wrist_neg = TRUE;
                 on_wrist_neg_button_pressed(widget, data);
             }
             break;
+
         case GDK_KEY_s:
-            if(!key_claw_pos)
-            {
+            if(!key_claw_pos) {
                 key_claw_pos = TRUE;
                 on_claw_pos_button_pressed(widget, data);
             }
             break;
+
         case GDK_KEY_w:
-            if(!key_claw_neg)
-            {
+            if(!key_claw_neg) {
                 key_claw_neg = TRUE;
                 on_claw_neg_button_pressed(widget, data);
             }
             break;
+
+        default:
+            // Ignore all other key presses
+                return;
+
     }
-    return FALSE;
 }
 
 //key release event callback
-static gboolean on_key_release(GtkWidget *widget, GdkEventKey *event, gpointer data)
-{
-    switch(event->keyval)
-    {
+static void on_key_release(GtkWidget *widget, const GdkEventKey *event, gpointer data) {
+
+    switch (event->keyval) {
         case GDK_KEY_1:
             key_light_on = FALSE;
             break;
+
         case GDK_KEY_2:
             key_light_off = FALSE;
             break;
+
         case GDK_KEY_k:
-            if(key_base_pos)
-            {
+            if(key_base_pos) {
                 on_base_button_released(widget, data);
                 key_base_pos = FALSE;
             }
             break;
+
         case GDK_KEY_o:
-            if(key_base_neg)
-            {
+            if(key_base_neg) {
                 on_base_button_released(widget, data);
                 key_base_neg = FALSE;
             }
             break;
+
         case GDK_KEY_j:
-            if(key_shoulder_pos)
-            {
+            if(key_shoulder_pos) {
                 on_shoulder_button_released(widget, data);
                 key_shoulder_pos = FALSE;
             }
             break;
+
         case GDK_KEY_i:
-            if(key_shoulder_neg)
-            {
+            if(key_shoulder_neg) {
                 on_shoulder_button_released(widget, data);
                 key_shoulder_neg = FALSE;
             }
             break;
+
         case GDK_KEY_f:
-            if(key_elbow_pos)
-            {
+            if(key_elbow_pos) {
                 on_elbow_button_released(widget, data);
                 key_elbow_pos = FALSE;
             }
             break;
+
         case GDK_KEY_r:
-            if(key_elbow_neg)
-            {
+            if(key_elbow_neg) {
                 on_elbow_button_released(widget, data);
                 key_elbow_neg = FALSE;
             }
             break;
+
         case GDK_KEY_d:
-            if(key_wrist_pos)
-            {
+            if(key_wrist_pos) {
                 on_wrist_button_released(widget, data);
                 key_wrist_pos = FALSE;
             }
             break;
+
         case GDK_KEY_e:
-            if(key_wrist_neg)
-            {
+            if(key_wrist_neg) {
                 on_wrist_button_released(widget, data);
                 key_wrist_neg = FALSE;
             }
             break;
+
         case GDK_KEY_s:
-            if(key_claw_pos)
-            {
+            if(key_claw_pos) {
                 on_claw_button_released(widget, data);
                 key_claw_pos = FALSE;
             }
             break;
+
         case GDK_KEY_w:
-            if(key_claw_neg)
-            {
+            if(key_claw_neg) {
                 on_claw_button_released(widget, data);
                 key_claw_neg = FALSE;
             }
             break;
+
+        default:
+            // Ignore all other key presses
+            return;
     }
-    return FALSE;
 }
 
 void* joystick_listener(void *arg) {
+
     int fd = open(JOYSTICK_DEV, O_RDONLY);
     if (fd == -1) {
         perror("Error opening joystick");
@@ -423,7 +450,8 @@ void* joystick_listener(void *arg) {
     struct js_event js;
     printf("Joystick monitoring started on %s\n", JOYSTICK_DEV);
 
-    while (1) {
+    while (joystick_enabled) {
+
         if (read(fd, &js, sizeof(struct js_event)) != sizeof(struct js_event)) {
             perror("Error reading joystick event");
             gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick disconnected");
@@ -497,7 +525,7 @@ void* joystick_listener(void *arg) {
                     }
                     break;
 
-                case 4: // Elbow control
+                case 5: // Elbow control
                     if(js.value == -32767) {
                         send_robot_command("elbow:up");
                         printf("Axis 4: Elbow UP\n");
@@ -513,7 +541,6 @@ void* joystick_listener(void *arg) {
         }
         usleep(5000);
     }
-
     close(fd);
     return NULL;
 }
@@ -522,11 +549,11 @@ int main(int argc, char *argv[])
 {
     gtk_init(&argc, &argv); //initialising gtk - the gui lib i'm using
 
-    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL); //instantiating a window called window (so imaginative i know), TOPLEVEL allows window title etc
+    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL); //instantiating a window called window (so imaginative I know), TOPLEVEL allows window title etc
     gtk_window_set_title(GTK_WINDOW(window), "Robotic Arm Controller"); //window title
     gtk_container_set_border_width(GTK_CONTAINER(window), 20); //window border width size
 
-    //how do i terminate the process when i close the window? signalssssss
+    //how do I terminate the process when I close the window? signals
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     g_signal_connect(window, "key-press-event", G_CALLBACK(on_key_press), NULL);
@@ -677,21 +704,21 @@ int main(int argc, char *argv[])
     gtk_box_pack_start(GTK_BOX(ioctl_hbox), send_button, FALSE, FALSE, 0);
 
     //label for command status
-    GtkWidget *command_status_label = gtk_label_new("Command status: none");
+    command_status_label = gtk_label_new("Command status: None");
     gtk_box_pack_start(GTK_BOX(vbox_right), command_status_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(command_status_label, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(command_status_label, 10);
 
     //status update: arm connection status
     //update/check arm connection
-    arm_connection_label = gtk_label_new("Arm status: disconnected");
+    arm_connection_label = gtk_label_new("Arm status: Disconnected");
     gtk_box_pack_start(GTK_BOX(vbox_right), arm_connection_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(arm_connection_label, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(arm_connection_label, 10);
 
     //status update: external input status
     //update/check joystick connection
-    joystick_connection_label = gtk_label_new(joystick_connection_string);
+    joystick_connection_label = gtk_label_new("Joystick status: Disconnected");
     gtk_box_pack_start(GTK_BOX(vbox_right), joystick_connection_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(joystick_connection_label, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(joystick_connection_label, 10);
@@ -703,6 +730,14 @@ int main(int argc, char *argv[])
     gtk_widget_set_halign(battery_label, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(battery_label, 10);
 
+
+    pthread_t joystick_thread;
+    if (pthread_create(&joystick_thread, NULL, joystick_listener, NULL) != 0) {
+        perror("Failed to create joystick thread");
+        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick thread failed");
+    } else {
+        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick connected");
+    }
 
     gtk_widget_show_all(window);
     gtk_main();
