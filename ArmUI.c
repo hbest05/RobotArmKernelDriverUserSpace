@@ -470,7 +470,7 @@ static void on_key_release(GtkWidget *widget, const GdkEventKey *event, gpointer
 void* joystick_listener(void *arg) {
 
     int fd = open(JOYSTICK_DEV, O_RDONLY);
-    int dead_zone = 16383
+    int dead_zone = 16383;
     if (fd == -1) {
         perror("Error opening joystick");
         gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick: Disconnected");
@@ -482,7 +482,7 @@ void* joystick_listener(void *arg) {
     struct js_event js;
     printf("Joystick monitoring started on %s\n", JOYSTICK_DEV);
 
-    static int last_last_wrist_state = 0;
+    static int last_wrist_state = 0;
     static int last_shoulder_state = 0;
     static int last_rotate_state = 0;
     static int last_elbow_state = 0;
@@ -630,10 +630,11 @@ void* joystick_listener(void *arg) {
                         } else {
                             send_robot_command("axis4:stop");
                             printf("Axis 4: stopped\n");
-                        }
+                        }   
                     }
                     break;
                 }
+            }
         }
         usleep(5000);
     }
@@ -840,4 +841,3 @@ int main(int argc, char *argv[])
 
     return 0;
 }
-
