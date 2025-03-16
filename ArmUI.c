@@ -924,7 +924,7 @@ int main(int argc, char *argv[])
     GtkWidget *text_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(text_entry), "Enter direct command...");
     g_signal_connect(text_entry, "activate", G_CALLBACK(on_text_entry_submit), text_entry);
-    gtk_entry_set_width_chars(GTK_ENTRY(text_entry), 20); //textbox is expandable
+    gtk_entry_set_width_chars(GTK_ENTRY(text_entry), 22); //textbox width
     gtk_box_pack_start(GTK_BOX(ioctl_hbox), text_entry, FALSE, FALSE, 0);
     gtk_widget_set_hexpand(text_entry, TRUE);
     gtk_widget_set_margin_top(text_entry, 5);
