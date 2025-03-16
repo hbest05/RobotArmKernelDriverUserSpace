@@ -36,7 +36,7 @@ static gboolean key_claw_pos = FALSE;
 static gboolean key_claw_neg = FALSE;
 
 //status labels
-GtkWidget *battery_label;
+GtkWidget *battery_status_label;
 GtkWidget *arm_connection_label;
 GtkWidget *joystick_connection_label;
 GtkWidget *command_status_label;
@@ -89,9 +89,8 @@ void read_robot_status() {
         final_connected_string = "Disconnected";
     }
 
-    gchar *new_label_text = g_strdup_printf("Arm status: %s", final_connected_string);
-    gtk_label_set_text(GTK_LABEL(arm_connection_label), new_label_text);
-    g_free(new_label_text);  // Free allocated memory
+    gtk_label_set_text(GTK_LABEL(arm_connection_label),
+        g_strdup_printf("Arm status: %s", final_connected_string));
 
     char *final_Command_String;
 
@@ -103,14 +102,12 @@ void read_robot_status() {
         final_Command_String = "None";
     }
 
-    gchar *new_label_text2 = g_strdup_printf("Command status: %s", final_Command_String);
-    gtk_label_set_text(GTK_LABEL(command_status_label), new_label_text2);
-    g_free(new_label_text2);  // Free allocated memory
+    gtk_label_set_text(GTK_LABEL(command_status_label),
+        g_strdup_printf("Command status: %s", final_Command_String));
 
     if (battery_level < 5 && battery_level > -1) {
-        gchar *new_label_text3 = g_strdup_printf("Battery: %d/4", battery_level);
-        gtk_label_set_text(GTK_LABEL(battery_label), new_label_text3);
-        g_free(new_label_text3);  // Free allocated memory
+        gtk_label_set_text(GTK_LABEL(battery_status_label),
+         g_strdup_printf("Battery: %d/4", battery_level));
     }
 
 }
@@ -172,6 +169,7 @@ static void on_text_entry_submit(GtkWidget *widget, gpointer data) {
 
     if (ioctl(fd, IOCTL_SET_VALUE, &cmd) == -1) {
         perror("ioctl failed");
+        gtk_label_set_text(GTK_LABEL(command_status_label),"Command status: Bad");
         close(fd);
         return;
     }
@@ -378,6 +376,8 @@ static gboolean on_key_press(GtkWidget *widget, const GdkEventKey *event, gpoint
             }
             break;
 
+        default:
+            break;
     }
     return FALSE;
 }
@@ -464,20 +464,28 @@ static void on_key_release(GtkWidget *widget, const GdkEventKey *event, gpointer
             }
             break;
 
+        default:
+            break;
     }
 }
 
 void* joystick_listener(void *arg) {
 
     int fd = open(JOYSTICK_DEV, O_RDONLY);
-    int dead_zone = 16383;
-    if (fd == -1) {
+
+    if (fd < 0) {
         perror("Error opening joystick");
-        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick: Disconnected");
-        pthread_exit(NULL);
-    } else {
-        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Connected");
+        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Disconnected");
+        printf("Attempting to connect to joystick...\n");
+
+        // Will keep trying to detect Joystick
+        while (fd < 0) {
+            usleep(10000);
+            fd = open(JOYSTICK_DEV, O_RDONLY);
+        }
     }
+
+    gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Connected");
 
     struct js_event js;
     printf("Joystick monitoring started on %s\n", JOYSTICK_DEV);
@@ -486,27 +494,49 @@ void* joystick_listener(void *arg) {
     static int last_shoulder_state = 0;
     static int last_rotate_state = 0;
     static int last_elbow_state = 0;
+    static int last_claw_state = 0;
 
     while (joystick_enabled) {
 
         if (read(fd, &js, sizeof(struct js_event)) != sizeof(struct js_event)) {
-            perror("Error reading joystick event");
-            gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick disconnected");
+
+            gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Disconnected");
+            printf("Attempting to reconnect to joystick...\n");
+
+            // Wait for joystick to be reconnected
             close(fd);
-            pthread_exit(NULL);
+            fd = -1;
+
+            // Will keep trying to detect Joystick
+            while (fd < 0) {
+                usleep(10000);
+                fd = open(JOYSTICK_DEV, O_RDONLY);
+            }
+
+            // We have a connection :)
+            gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Connected");
+            continue;
+
+            // pthread_exit(NULL);
         }
 
         if(js.type == JS_EVENT_BUTTON) { 
             if(js.value == 1) { 
                 switch (js.number) {
                     case 0:
-                        send_robot_command("claw:close");
-                        printf("Claw Close\n");
+                        if (last_claw_state != -1) {
+                            send_robot_command("claw:close");
+                            printf("Claw Close\n");
+                            last_claw_state = -1;
+                        }
                         break;
         
                     case 1:
-                        send_robot_command("claw:open");
-                        printf("Claw opening\n");
+                        if (last_claw_state != 1) {
+                            send_robot_command("claw:open");
+                            last_claw_state = 1;
+                            printf("Claw opening\n");
+                        }
                         break;
         
                     case 2:
@@ -518,8 +548,8 @@ void* joystick_listener(void *arg) {
                         break;
         
                     case 3:
-                        send_robot_command("led:on");
-                        printf("Joystick: Lights ON\n");
+                        send_robot_command("led:off");
+                        printf("Joystick: Lights off\n");
                         break;
         
                     case 4:
@@ -531,8 +561,8 @@ void* joystick_listener(void *arg) {
                         break;
         
                     case 5:
-                        send_robot_command("led:off");
-                        printf("Joystick: Lights OFF\n");
+                        send_robot_command("led:on");
+                        printf("Joystick: Lights on\n");
                         break;
         
                     default:
@@ -541,7 +571,18 @@ void* joystick_listener(void *arg) {
                 }
 
             } else if(js.value == 0) { // Button released
-                switch(js.number) {
+                switch (js.number) {
+
+                    // Two cases to handle both buttons being released
+                    case 0:
+                    case 1:
+                        if (last_claw_state != 0) {
+                            send_robot_command("claw:stop");
+                            last_claw_state = 0;
+                            printf("Claw stopped\n");
+                        }
+                        break;
+
                     case 2: // Wrist down button released
                     case 4: // Wrist up button released
                         if(last_wrist_state != 0) {
@@ -550,11 +591,18 @@ void* joystick_listener(void *arg) {
                             printf("Debugging: wrist stopped\n");
                         }
                         break;
+
+                    default:
+                        printf("Joystick Button %d released\n", js.number);
+                        break;
                 }
             }
         }
 
         if(js.type == JS_EVENT_AXIS) {
+
+            const int dead_zone = 10000;
+
             switch(js.number) {
                 case 1: { // Shoulder tilt forward/backward
                     int new_state;
@@ -582,12 +630,13 @@ void* joystick_listener(void *arg) {
                     }
                     break;
                 }
-                case 3: { // Axis 3 logic
+                case 3: { // Axis 3 (base) logic
                     int new_state;
-        
-                    if(js.value >= dead_zone) {
+
+                    // Added extra dead-zone for the base as it's needed
+                    if(js.value >= (dead_zone + 10000*2 )) {
                         new_state = 1; // positive
-                    } else if(js.value <= -dead_zone) {
+                    } else if(js.value <= -(dead_zone + 10000 )) {
                         new_state = -1; // negative
                     } else {
                         new_state = 0; // stopped
@@ -596,19 +645,19 @@ void* joystick_listener(void *arg) {
                     if(new_state != last_rotate_state) {
                         last_rotate_state = new_state;
                         if(new_state == 1) {
-                            send_robot_command("axis3:positive");
+                            send_robot_command("base:right");
                             printf("Axis 3: Positive\n");
                         } else if(new_state == -1) {
-                            send_robot_command("axis3:negative");
+                            send_robot_command("base:left");
                             printf("Axis 3: Negative\n");
                         } else {
-                            send_robot_command("axis3:stop");
+                            send_robot_command("base:stop");
                             printf("Axis 3: stopped\n");
                         }
                     }
                     break;
                 }
-                case 4: { // Axis 4 logic
+                case 5: { // Axis 4 logic
                     int new_state;
         
                     if(js.value >= dead_zone) {
@@ -622,21 +671,23 @@ void* joystick_listener(void *arg) {
                     if(new_state != last_elbow_state) {
                         last_elbow_state = new_state;
                         if(new_state == 1) {
-                            send_robot_command("axis4:positive");
+                            send_robot_command("elbow:down");
                             printf("Axis 4: Positive\n");
                         } else if(new_state == -1) {
-                            send_robot_command("axis4:negative");
+                            send_robot_command("elbow:up");
                             printf("Axis 4: Negative\n");
                         } else {
-                            send_robot_command("axis4:stop");
+                            send_robot_command("elbow:stop");
                             printf("Axis 4: stopped\n");
                         }   
                     }
                     break;
                 }
+                default:
+                    break;
             }
         }
-        usleep(5000);
+        //usleep(5000);
     }
     close(fd);
     return NULL;
@@ -822,21 +873,26 @@ int main(int argc, char *argv[])
 
     //status update: battery status
     //update/check battery
-    battery_label = gtk_label_new("Battery: 0/4");
-    gtk_box_pack_start(GTK_BOX(vbox_right), battery_label, FALSE, FALSE, 0);
-    gtk_widget_set_halign(battery_label, GTK_ALIGN_START);
-    gtk_widget_set_margin_bottom(battery_label, 10);
+    battery_status_label = gtk_label_new("Battery: 0/4");
+    gtk_box_pack_start(GTK_BOX(vbox_right), battery_status_label, FALSE, FALSE, 0);
+    gtk_widget_set_halign(battery_status_label, GTK_ALIGN_START);
+    gtk_widget_set_margin_bottom(battery_status_label, 10);
 
 
     pthread_t joystick_thread;
     if (pthread_create(&joystick_thread, NULL, joystick_listener, NULL) != 0) {
         perror("Failed to create joystick thread");
-        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick thread failed");
+        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Failed");
     } else {
-        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick connected");
+        gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Connected");
     }
 
     gtk_widget_show_all(window);
+
+    // Send this to make sure arm is not moving and to show connection status
+    send_robot_command("stop:all");
+    gtk_label_set_text(GTK_LABEL(command_status_label),"Command status: None");
+
     gtk_main();
 
     return 0;
