@@ -16,7 +16,8 @@
 #define JOYSTICK_DEV "/dev/input/js1"
 #define AXIS_THRESHOLD 1000
 
-//holly checking if GitHub working on vm :)
+//isolating input, default to mouse (0), with keyboard(2), and joystick (3)
+static int active_input_mode = 0;
 
 static bool keyboard_enabled = TRUE;
 static bool joystick_enabled = TRUE;
@@ -285,6 +286,8 @@ static void on_claw_button_released(GtkWidget *widget, gpointer data) {
 //key press event callback
 static gboolean on_key_press(GtkWidget *widget, const GdkEventKey *event, gpointer data) {
 
+    if (active_input_mode != 1) return FALSE;
+
     // Implemented keyboard block
     if (!keyboard_enabled) {
         return FALSE;
@@ -384,6 +387,8 @@ static gboolean on_key_press(GtkWidget *widget, const GdkEventKey *event, gpoint
 
 //key release event callback
 static void on_key_release(GtkWidget *widget, const GdkEventKey *event, gpointer data) {
+
+    if (active_input_mode != 1) return;
 
     switch (event->keyval) {
         case GDK_KEY_1:
@@ -496,7 +501,7 @@ void* joystick_listener(void *arg) {
     static int last_elbow_state = 0;
     static int last_claw_state = 0;
 
-    while (joystick_enabled) {
+while (joystick_enabled && active_input_mode == 2) {
 
         if (read(fd, &js, sizeof(struct js_event)) != sizeof(struct js_event)) {
 
@@ -693,6 +698,30 @@ void* joystick_listener(void *arg) {
     return NULL;
 }
 
+static void on_mouse_toggle_clicked(GtkWidget *widget, gpointer data) {
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
+        active_input_mode = 0;
+        keyboard_enabled = FALSE;
+        joystick_enabled = FALSE;
+    }
+}
+
+static void on_keyboard_toggle_clicked(GtkWidget *widget, gpointer data) {
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
+        active_input_mode = 1;
+        keyboard_enabled = TRUE;
+        joystick_enabled = FALSE;
+    }
+}
+
+static void on_joystick_toggle_clicked(GtkWidget *widget, gpointer data) {
+    if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
+        active_input_mode = 2;
+        keyboard_enabled = FALSE;
+        joystick_enabled = TRUE;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     gtk_init(&argc, &argv); //initialising gtk - the gui lib i'm using
@@ -828,6 +857,26 @@ int main(int argc, char *argv[])
     gtk_box_pack_start(GTK_BOX(claw_hbox), claw_neg_button, TRUE, TRUE, 0);
 
     //right side vbox
+
+    //input isolating toggle buttons
+    GtkWidget *input_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
+    gtk_box_pack_start(GTK_BOX(vbox_right), input_hbox, FALSE, FALSE, 0);
+
+    //using radio buttons for mutually exclusive selection
+    GtkWidget *mouse_toggle = gtk_radio_button_new_with_label(NULL, "Mouse input");
+    GtkWidget *keyboard_toggle = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(mouse_toggle), "Keyboard input");
+    GtkWidget *joystick_toggle = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(mouse_toggle), "Joystick input");
+
+    //default selcetion
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mouse_toggle), TRUE);
+
+    gtk_box_pack_start(GTK_BOX(input_hbox), mouse_toggle, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(input_hbox), keyboard_toggle, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(input_hbox), joystick_toggle, TRUE, TRUE, 0);
+
+    g_signal_connect(mouse_toggle, "toggled", G_CALLBACK(on_mouse_toggle_clicked), NULL);
+    g_signal_connect(keyboard_toggle, "toggled", G_CALLBACK(on_keyboard_toggle_clicked), NULL);
+    g_signal_connect(joystick_toggle, "toggled", G_CALLBACK(on_joystick_toggle_clicked), NULL);
     
     ///label for ioctl input field
     GtkWidget *ioctl_label = gtk_label_new("IOCTL command input:");
