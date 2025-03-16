@@ -470,6 +470,7 @@ static void on_key_release(GtkWidget *widget, const GdkEventKey *event, gpointer
 void* joystick_listener(void *arg) {
 
     int fd = open(JOYSTICK_DEV, O_RDONLY);
+    int dead_zone = 16383
     if (fd == -1) {
         perror("Error opening joystick");
         gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick: Disconnected");
@@ -481,6 +482,11 @@ void* joystick_listener(void *arg) {
     struct js_event js;
     printf("Joystick monitoring started on %s\n", JOYSTICK_DEV);
 
+    static int last_last_wrist_state = 0;
+    static int last_shoulder_state = 0;
+    static int last_rotate_state = 0;
+    static int last_elbow_state = 0;
+
     while (joystick_enabled) {
 
         if (read(fd, &js, sizeof(struct js_event)) != sizeof(struct js_event)) {
@@ -490,85 +496,144 @@ void* joystick_listener(void *arg) {
             pthread_exit(NULL);
         }
 
-        if(js.type == JS_EVENT_BUTTON && js.value == 1) { // Button pressed
-            switch (js.number) {
-                case 0:
-                    send_robot_command("claw:close");
-                    printf("Claw Close\n");
-                    break;
+        if(js.type == JS_EVENT_BUTTON) { 
+            if(js.value == 1) { 
+                switch (js.number) {
+                    case 0:
+                        send_robot_command("claw:close");
+                        printf("Claw Close\n");
+                        break;
+        
+                    case 1:
+                        send_robot_command("claw:open");
+                        printf("Claw opening\n");
+                        break;
+        
+                    case 2:
+                        if(last_wrist_state != -1) {
+                            send_robot_command("wrist:down");
+                            last_wrist_state = -1;
+                            printf("Debugging: wrist down\n");
+                        }
+                        break;
+        
+                    case 3:
+                        send_robot_command("led:on");
+                        printf("Joystick: Lights ON\n");
+                        break;
+        
+                    case 4:
+                        if(last_wrist_state != 1) {
+                            send_robot_command("wrist:up");
+                            last_wrist_state = 1;
+                            printf("Debugging: wrist up\n");
+                        }
+                        break;
+        
+                    case 5:
+                        send_robot_command("led:off");
+                        printf("Joystick: Lights OFF\n");
+                        break;
+        
+                    default:
+                        printf("Joystick Button %d pressed\n", js.number);
+                        break;
+                }
 
-                case 1:
-                    send_robot_command("claw:open");
-                    printf("Claw opening\n");
-                    break;
-
-                case 2:
-                    send_robot_command("wrist:down");
-                    printf("Debugging: wrist down\n");
-                    break;
-
-                case 3:
-                    send_robot_command("led:on");
-                    printf("Joystick: Lights ON\n");
-                    break;
-
-                case 4:
-                    send_robot_command("wrist:up");
-                    printf("Debugging: wrist up\n");
-                    break;
-                
-                case 5:
-                    send_robot_command("led:off");
-                    printf("Joystick: Lights OFF\n");
-                    break;
-
-                default:
-                    printf("Joystick Button %d pressed\n", js.number);
-                    break;
+            } else if(js.value == 0) { // Button released
+                switch(js.number) {
+                    case 2: // Wrist down button released
+                    case 4: // Wrist up button released
+                        if(last_wrist_state != 0) {
+                            send_robot_command("wrist:stop");
+                            last_wrist_state = 0;
+                            printf("Debugging: wrist stopped\n");
+                        }
+                        break;
+                }
             }
         }
 
         if(js.type == JS_EVENT_AXIS) {
             switch(js.number) {
-                case 1: // Shoulder tilt forward/backward
-                    if(js.value == 32767) {
-                        send_robot_command("shoulder:up");
-                        printf("Axis 1: Shoulder UP\n");
-                    } else if(js.value == -32767) {
-                        send_robot_command("shoulder:down");
-                        printf("Axis 1: Shoulder DOWN\n");
+                case 1: { // Shoulder tilt forward/backward
+                    int new_state;
+        
+                    if(js.value >= dead_zone) {
+                        new_state = 1; // moving up
+                    } else if(js.value <= -dead_zone) {
+                        new_state = -1; // moving down
                     } else {
-                        send_robot_command("shoulder:stop");
-                        // printf("Axis 1: Shoulder stopped\n");
+                        new_state = 0; // stopped
+                    }
+        
+                    if(new_state != last_shoulder_state) {
+                        last_shoulder_state = new_state;
+                        if(new_state == 1) {
+                            send_robot_command("shoulder:up");
+                            printf("Axis 1: Shoulder UP\n");
+                        } else if(new_state == -1) {
+                            send_robot_command("shoulder:down");
+                            printf("Axis 1: Shoulder DOWN\n");
+                        } else {
+                            send_robot_command("shoulder:stop");
+                            printf("Axis 1: Shoulder stopped\n");
+                        }
                     }
                     break;
-
-                case 3: // Turning left/right
-                    if(js.value == -32767) {
-                        send_robot_command("base:left");
-                        printf("Axis 3: Base rotating LEFT\n");
-                    } else if(js.value == 32767) {
-                        send_robot_command("base:right");
-                        printf("Axis 3: Base rotating RIGHT\n");
+                }
+                case 3: { // Axis 3 logic
+                    int new_state;
+        
+                    if(js.value >= dead_zone) {
+                        new_state = 1; // positive
+                    } else if(js.value <= -dead_zone) {
+                        new_state = -1; // negative
                     } else {
-                        send_robot_command("base:stop");
-                        // printf("Axis 3: Base stopped\n");
+                        new_state = 0; // stopped
+                    }
+        
+                    if(new_state != last_rotate_state) {
+                        last_rotate_state = new_state;
+                        if(new_state == 1) {
+                            send_robot_command("axis3:positive");
+                            printf("Axis 3: Positive\n");
+                        } else if(new_state == -1) {
+                            send_robot_command("axis3:negative");
+                            printf("Axis 3: Negative\n");
+                        } else {
+                            send_robot_command("axis3:stop");
+                            printf("Axis 3: stopped\n");
+                        }
                     }
                     break;
-
-                case 5: // Elbow control
-                    if(js.value == -32767) {
-                        send_robot_command("elbow:up");
-                        printf("Axis 4: Elbow UP\n");
-                    } else if(js.value == 32767) {
-                        send_robot_command("elbow:down");
-                        printf("Axis 4: Elbow DOWN\n");
+                }
+                case 4: { // Axis 4 logic
+                    int new_state;
+        
+                    if(js.value >= dead_zone) {
+                        new_state = 1; // positive
+                    } else if(js.value <= -dead_zone) {
+                        new_state = -1; // negative
                     } else {
-                        send_robot_command("elbow:stop");
-                        // printf("Axis 4: Elbow stopped\n");
+                        new_state = 0; // stopped
+                    }
+        
+                    if(new_state != last_elbow_state) {
+                        last_elbow_state = new_state;
+                        if(new_state == 1) {
+                            send_robot_command("axis4:positive");
+                            printf("Axis 4: Positive\n");
+                        } else if(new_state == -1) {
+                            send_robot_command("axis4:negative");
+                            printf("Axis 4: Negative\n");
+                        } else {
+                            send_robot_command("axis4:stop");
+                            printf("Axis 4: stopped\n");
+                        }
                     }
                     break;
-            }
+                }
         }
         usleep(5000);
     }
