@@ -18,6 +18,7 @@
 
 //isolating input, default to mouse (0), with keyboard(2), and joystick (3)
 static int active_input_mode = 0;
+static GList *control_buttons = NULL; 
 
 static bool keyboard_enabled = TRUE;
 static bool joystick_enabled = TRUE;
@@ -698,11 +699,19 @@ while (joystick_enabled && active_input_mode == 2) {
     return NULL;
 }
 
+static void toggle_buttons(gboolean enable) {
+    GList *i;
+    for (i = control_buttons; i != NULL; i = i->next) {
+        gtk_widget_set_sensitive(GTK_WIDGET(i->data), enable);
+    }
+}
+
 static void on_mouse_toggle_clicked(GtkWidget *widget, gpointer data) {
     if (gtk_toggle_button_get_active(GTK_TOGGLE_BUTTON(widget))) {
         active_input_mode = 0;
         keyboard_enabled = FALSE;
         joystick_enabled = FALSE;
+        toggle_buttons(TRUE);
     }
 }
 
@@ -711,6 +720,7 @@ static void on_keyboard_toggle_clicked(GtkWidget *widget, gpointer data) {
         active_input_mode = 1;
         keyboard_enabled = TRUE;
         joystick_enabled = FALSE;
+        toggle_buttons(FALSE);
     }
 }
 
@@ -719,6 +729,8 @@ static void on_joystick_toggle_clicked(GtkWidget *widget, gpointer data) {
         active_input_mode = 2;
         keyboard_enabled = FALSE;
         joystick_enabled = TRUE;
+        toggle_buttons(FALSE);
+
     }
 }
 
@@ -858,6 +870,20 @@ int main(int argc, char *argv[])
 
     //right side vbox
 
+    //list of buttons for isolating mouse input
+    control_buttons = g_list_append(control_buttons, light_on_button);
+    control_buttons = g_list_append(control_buttons, light_off_button);
+    control_buttons = g_list_append(control_buttons, base_pos_button);
+    control_buttons = g_list_append(control_buttons, base_neg_button);
+    control_buttons = g_list_append(control_buttons, shoulder_pos_button);
+    control_buttons = g_list_append(control_buttons, shoulder_neg_button);
+    control_buttons = g_list_append(control_buttons, elbow_pos_button);
+    control_buttons = g_list_append(control_buttons, elbow_neg_button);
+    control_buttons = g_list_append(control_buttons, wrist_pos_button);
+    control_buttons = g_list_append(control_buttons, wrist_neg_button);
+    control_buttons = g_list_append(control_buttons, claw_pos_button);
+    control_buttons = g_list_append(control_buttons, claw_neg_button);
+
     //input isolating toggle buttons
     GtkWidget *input_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(vbox_right), input_hbox, FALSE, FALSE, 0);
@@ -877,6 +903,8 @@ int main(int argc, char *argv[])
     g_signal_connect(mouse_toggle, "toggled", G_CALLBACK(on_mouse_toggle_clicked), NULL);
     g_signal_connect(keyboard_toggle, "toggled", G_CALLBACK(on_keyboard_toggle_clicked), NULL);
     g_signal_connect(joystick_toggle, "toggled", G_CALLBACK(on_joystick_toggle_clicked), NULL);
+
+    gtk_widget_set_margin_bottom(input_hbox, 10);
     
     ///label for ioctl input field
     GtkWidget *ioctl_label = gtk_label_new("IOCTL command input:");
@@ -886,19 +914,22 @@ int main(int argc, char *argv[])
     //hbox for both the text entry and send button
     GtkWidget *ioctl_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(vbox_right), ioctl_hbox, FALSE, FALSE, 0);
+    gtk_box_set_homogeneous(GTK_BOX(ioctl_hbox), FALSE); //keeps send button beside textbox
 
     //text entry for ioctl input
     GtkWidget *text_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(text_entry), "Enter direct command...");
     g_signal_connect(text_entry, "activate", G_CALLBACK(on_text_entry_submit), text_entry);
+    gtk_entry_set_width_chars(GTK_ENTRY(text_entry), 30); //textbox is expandable
     gtk_box_pack_start(GTK_BOX(ioctl_hbox), text_entry, TRUE, TRUE, 0);
-    gtk_widget_set_halign(text_entry, GTK_ALIGN_START);
-    gtk_widget_set_margin_bottom(text_entry, 10);
-
+    gtk_widget_set_hexpand(text_entry, TRUE);
+    
     //send button for ioctl input
     GtkWidget *send_button = gtk_button_new_with_label("Send");
     g_signal_connect(send_button, "clicked", G_CALLBACK(on_text_entry_submit), text_entry);
     gtk_box_pack_start(GTK_BOX(ioctl_hbox), send_button, FALSE, FALSE, 0);
+
+    gtk_widget_set_margin_bottom(ioctl_hbox, 10);
 
     //label for command status
     command_status_label = gtk_label_new("Command status: None");
