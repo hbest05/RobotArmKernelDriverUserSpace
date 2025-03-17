@@ -963,12 +963,18 @@ int main(int argc, char *argv[])
     gtk_widget_set_halign(battery_status_label, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(battery_status_label, 10);
 
-
+    // Declare a thread variable for the joystick listener
     pthread_t joystick_thread;
+
+    // Attempt to create a new thread
     if (pthread_create(&joystick_thread, NULL, joystick_listener, NULL) != 0) {
+        // If thread creation fails, print an error message
         perror("Failed to create joystick thread");
+
+         // Update the GTK label to indicate the joystick connection failed
         gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Failed");
     } else {
+        // If the thread is successfully created, update the label to show connection success
         gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Connected");
     }
 
