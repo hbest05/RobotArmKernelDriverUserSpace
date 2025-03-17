@@ -180,7 +180,6 @@ static void on_text_entry_submit(GtkWidget *widget, gpointer data) {
 
     close(fd);
 
-    //call to device... would it use  send_robot_command() also?
     gtk_entry_set_text(GTK_ENTRY(entry), "");
 
 }
@@ -289,7 +288,7 @@ static gboolean on_key_press(GtkWidget *widget, const GdkEventKey *event, gpoint
 
     if (active_input_mode != 1) return FALSE;
 
-    // Implemented keyboard block
+    //checking keyboard input selected
     if (!keyboard_enabled) {
         return FALSE;
     }
@@ -386,7 +385,7 @@ static gboolean on_key_press(GtkWidget *widget, const GdkEventKey *event, gpoint
     return FALSE;
 }
 
-//key release event callback
+//key release 
 static void on_key_release(GtkWidget *widget, const GdkEventKey *event, gpointer data) {
 
     if (active_input_mode != 1) return;
@@ -703,6 +702,7 @@ while (joystick_enabled) {
     return NULL;
 }
 
+//isolating input radio button methods
 static void toggle_buttons(gboolean enable) {
     GList *i;
     for (i = control_buttons; i != NULL; i = i->next) {
@@ -739,11 +739,11 @@ int main(int argc, char *argv[])
 {
     gtk_init(&argc, &argv); //initialising gtk - the gui lib i'm using
 
-    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL); //instantiating a window called window (so imaginative I know), TOPLEVEL allows window title etc
+    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL); //instantiating a window, TOPLEVEL allows window title etc
     gtk_window_set_title(GTK_WINDOW(window), "Robotic Arm Controller"); //window title
     gtk_container_set_border_width(GTK_CONTAINER(window), 20); //window border width size
 
-    //how do I terminate the process when I close the window? signals
+    //signals to terminate the process when I close the window?
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     g_signal_connect(window, "key-press-event", G_CALLBACK(on_key_press), NULL);
@@ -753,6 +753,9 @@ int main(int argc, char *argv[])
     //create main horizontal box to split ui into two halves
     GtkWidget *hbox_main = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10); //10 pixel spacing
     gtk_container_add(GTK_CONTAINER(window), hbox_main);
+
+
+    //left side vbox
 
     //left side vbox for mouse input buttons
     GtkWidget *vbox_left = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5); //5 pixel spacing
@@ -868,6 +871,7 @@ int main(int argc, char *argv[])
     g_signal_connect(claw_neg_button, "pressed", G_CALLBACK(on_claw_neg_button_pressed), NULL);
     g_signal_connect(claw_neg_button, "released", G_CALLBACK(on_claw_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(claw_hbox), claw_neg_button, TRUE, TRUE, 0);
+
 
     //right side vbox
 
