@@ -1,9 +1,9 @@
 #include <stdio.h>
-#include <gtk/gtk.h>
+#include <gtk/gtk.h> //for the gui
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
-#include <linux/joystick.h>
+#include <linux/joystick.h> // for joystick
 #include <pthread.h>
 #include <stdbool.h>
 
@@ -111,6 +111,7 @@ void read_robot_status() {
         gtk_label_set_text(GTK_LABEL(battery_status_label),
          g_strdup_printf("Battery: %d/4", battery_level));
     }
+
 }
 
 /**
@@ -145,7 +146,7 @@ struct device_command {
     int var3;
 };
 
-// Direct command input (ioctl)
+//direct command input (ioctl)
 static void on_text_entry_submit(GtkWidget *widget, gpointer data) {
 
     GtkWidget *entry = GTK_WIDGET(data);
@@ -179,110 +180,111 @@ static void on_text_entry_submit(GtkWidget *widget, gpointer data) {
 
     close(fd);
 
-    // Call to device
+    //call to device... would it use  send_robot_command() also?
     gtk_entry_set_text(GTK_ENTRY(entry), "");
 
 }
 
-// Light (on, off)
+//light (on, off)
 static void on_light_on_button_clicked(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("led:on");
     printf("Debugging: light on\n");
 }
 static void on_light_off_button_clicked(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("led:off");
     printf("Debugging: light off\n");
 }
 
-// Base (clockwise = +, anticlockwise = -)
+//base (clockwise = +, anticlockwise = -)
 static void on_base_pos_button_pressed(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("base:right");
     printf("Debugging: base turning clockwise\n");
 }
 static void on_base_neg_button_pressed(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("base:left");
     printf("Debugging: base turning anticlockwise\n");
 }
 static void on_base_button_released(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("base:stop");
     printf("Debugging: base turning stopped\n");
 }
 
 
-// Shoulder
+//shoulder
 static void on_shoulder_pos_button_pressed(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("shoulder:up");
     printf("Debugging: shoulder opening\n");
 }
 static void on_shoulder_neg_button_pressed(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("shoulder:down");
     printf("Debugging: shoulder closing\n");
 }
 static void on_shoulder_button_released(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("shoulder:stop");
     printf("Debugging: shoulder turning stopped\n");
 }
 
-// Elbow
+
+//elbow
 static void on_elbow_pos_button_pressed(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("elbow:up");
     printf("Debugging: elbow opening\n");
 }
 static void on_elbow_neg_button_pressed(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("elbow:down");
     printf("Debugging: elbow closing\n");
 }
 static void on_elbow_button_released(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("elbow:stop");
     printf("Debugging: elbow turning stopped\n");
 }
 
-// Wrist 
+//wrist 
 static void on_wrist_pos_button_pressed(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("wrist:up");
     printf("Debugging: wrist opening\n");
 }
 static void on_wrist_neg_button_pressed(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("wrist:down");
     printf("Debugging: wrist closing\n");
 }
 static void on_wrist_button_released(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("wrist:stop");
     printf("Debugging: wrist turning stopped\n");
 }
 
-// Claw (open = +, close = -)
+//claw (open = +, close = -)
 static void on_claw_pos_button_pressed(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("claw:open");
     printf("Debugging: claw opening\n");
 }
 static void on_claw_neg_button_pressed(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("claw:close");
     printf("Debugging: claw closing\n");
 }
 static void on_claw_button_released(GtkWidget *widget, gpointer data) {
-    // Call to device
+    //call to device
     send_robot_command("claw:stop");
     printf("Debugging: claw stopped\n");
 }
 
-// Key press event callback
+//key press event callback
 static gboolean on_key_press(GtkWidget *widget, const GdkEventKey *event, gpointer data) {
 
     if (active_input_mode != 1) return FALSE;
@@ -384,7 +386,7 @@ static gboolean on_key_press(GtkWidget *widget, const GdkEventKey *event, gpoint
     return FALSE;
 }
 
-// Key release event callback
+//key release event callback
 static void on_key_release(GtkWidget *widget, const GdkEventKey *event, gpointer data) {
 
     if (active_input_mode != 1) return;
@@ -524,11 +526,9 @@ while (joystick_enabled) {
                 fd = open(JOYSTICK_DEV, O_RDONLY);
             }
 
-            // We have a connection :)
             gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Connected");
             continue;
 
-            // pthread_exit(NULL);
         }
 
         if(js.type == JS_EVENT_BUTTON) { 
@@ -619,11 +619,11 @@ while (joystick_enabled) {
                     int new_state;
         
                     if(js.value >= dead_zone) {
-                        new_state = 1; // moving up
+                        new_state = 1; // Moving up
                     } else if(js.value <= -dead_zone) {
-                        new_state = -1; // moving down
+                        new_state = -1; // Moving down
                     } else {
-                        new_state = 0; // stopped
+                        new_state = 0; // Stopped
                     }
         
                     if(new_state != last_shoulder_state) {
@@ -731,146 +731,147 @@ static void on_joystick_toggle_clicked(GtkWidget *widget, gpointer data) {
         active_input_mode = 2;
         keyboard_enabled = FALSE;
         toggle_buttons(FALSE);
+
     }
 }
 
 int main(int argc, char *argv[])
 {
-    gtk_init(&argc, &argv); // Initialising gtk - the gui lib i'm using
+    gtk_init(&argc, &argv); //initialising gtk - the gui lib i'm using
 
-    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL); // Instantiating a window called window (so imaginative I know), TOPLEVEL allows window title etc
-    gtk_window_set_title(GTK_WINDOW(window), "Robotic Arm Controller"); // Window title
-    gtk_container_set_border_width(GTK_CONTAINER(window), 20); // Window border width size
+    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL); //instantiating a window called window (so imaginative I know), TOPLEVEL allows window title etc
+    gtk_window_set_title(GTK_WINDOW(window), "Robotic Arm Controller"); //window title
+    gtk_container_set_border_width(GTK_CONTAINER(window), 20); //window border width size
 
-    // How do I terminate the process when I close the window? signals
+    //how do I terminate the process when I close the window? signals
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     g_signal_connect(window, "key-press-event", G_CALLBACK(on_key_press), NULL);
     g_signal_connect(window, "key-release-event", G_CALLBACK(on_key_release), NULL);
     gtk_widget_set_can_focus(window, TRUE);
 
-    // Create main horizontal box to split ui into two halves
-    GtkWidget *hbox_main = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10); // 10 pixel spacing
+    //create main horizontal box to split ui into two halves
+    GtkWidget *hbox_main = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10); //10 pixel spacing
     gtk_container_add(GTK_CONTAINER(window), hbox_main);
 
-    // Left side vbox for mouse input buttons
-    GtkWidget *vbox_left = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5); // 5 pixel spacing
+    //left side vbox for mouse input buttons
+    GtkWidget *vbox_left = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5); //5 pixel spacing
     gtk_box_pack_start(GTK_BOX(hbox_main), vbox_left, TRUE, TRUE, 0);
 
-    // Right side vbox for text entry and status updates
-    GtkWidget *vbox_right = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5); // 5 pixel spacing
+    //right side vbox for text entry and status updates
+    GtkWidget *vbox_right = gtk_box_new(GTK_ORIENTATION_VERTICAL, 5); //5 pixel spacing
     gtk_box_pack_start(GTK_BOX(hbox_main), vbox_right, TRUE, TRUE, 0);
     gtk_widget_set_margin_start(vbox_right, 20);
 
-    // Light label
+    //light label
     GtkWidget *light_label = gtk_label_new("Light");
     gtk_box_pack_start(GTK_BOX(vbox_left), light_label, FALSE, FALSE, 0);
 
-    // Hbox for light buttons
-    GtkWidget *light_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); // 5 pixel spacing
+    //hbox for light buttons
+    GtkWidget *light_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); //5 pixel spacing
     gtk_box_pack_start(GTK_BOX(vbox_left), light_hbox, FALSE, FALSE, 0);
-    // Light on button
+    //light on button
     GtkWidget *light_on_button = gtk_button_new_with_label("On (1)");
     g_signal_connect(light_on_button, "clicked", G_CALLBACK(on_light_on_button_clicked), NULL);
     gtk_box_pack_start(GTK_BOX(light_hbox), light_on_button, TRUE, TRUE, 0);
-    // Light off button
+    //light off button
     GtkWidget *light_off_button = gtk_button_new_with_label("Off (2)");
     g_signal_connect(light_off_button, "clicked", G_CALLBACK(on_light_off_button_clicked), NULL);
     gtk_box_pack_start(GTK_BOX(light_hbox), light_off_button, TRUE, TRUE, 0);
 
-    // Base label
+    //base label
     GtkWidget *base_label = gtk_label_new("base");
     gtk_box_pack_start(GTK_BOX(vbox_left), base_label, FALSE, FALSE, 0);
 
-    // Hbox for base buttons
-    GtkWidget *base_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); // 5 pixel spacing
+    //hbox for base buttons
+    GtkWidget *base_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); //5 pixel spacing
     gtk_box_pack_start(GTK_BOX(vbox_left), base_hbox, FALSE, FALSE, 0);
-    // Base pos button (pressed and released for continuous holding button)
+    //base pos button (pressed and released for continuous holding button)
     GtkWidget *base_pos_button = gtk_button_new_with_label("Right (k)");
     g_signal_connect(base_pos_button, "pressed", G_CALLBACK(on_base_pos_button_pressed), NULL);
     g_signal_connect(base_pos_button, "released", G_CALLBACK(on_base_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(base_hbox), base_pos_button, TRUE, TRUE, 0);
-    // Base neg button
+    //base neg button
     GtkWidget *base_neg_button = gtk_button_new_with_label("Left (o)");
     g_signal_connect(base_neg_button, "pressed", G_CALLBACK(on_base_neg_button_pressed), NULL);
     g_signal_connect(base_neg_button, "released", G_CALLBACK(on_base_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(base_hbox), base_neg_button, TRUE, TRUE, 0);
 
-    // Shoulder label
+    //shoulder label
     GtkWidget *shoulder_label = gtk_label_new("Shoulder");
     gtk_box_pack_start(GTK_BOX(vbox_left), shoulder_label, FALSE, FALSE, 0);
 
-    // Hbox for shoulder buttons
-    GtkWidget *shoulder_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); // 5 pixel spacing
+    //hbox for shoulder buttons
+    GtkWidget *shoulder_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); //5 pixel spacing
     gtk_box_pack_start(GTK_BOX(vbox_left), shoulder_hbox, FALSE, FALSE, 0);
-    // Shoulder pos button (pressed and released for continuous holding button)
+    //shoulder pos button (pressed and released for continuous holding button)
     GtkWidget *shoulder_pos_button = gtk_button_new_with_label("Up (j)");
     g_signal_connect(shoulder_pos_button, "pressed", G_CALLBACK(on_shoulder_pos_button_pressed), NULL);
     g_signal_connect(shoulder_pos_button, "released", G_CALLBACK(on_shoulder_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(shoulder_hbox), shoulder_pos_button, TRUE, TRUE, 0);
-    // Shoulder neg button
+    //shoulder neg button
     GtkWidget *shoulder_neg_button = gtk_button_new_with_label("Down (i)");
     g_signal_connect(shoulder_neg_button, "pressed", G_CALLBACK(on_shoulder_neg_button_pressed), NULL);
     g_signal_connect(shoulder_neg_button, "released", G_CALLBACK(on_shoulder_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(shoulder_hbox), shoulder_neg_button, TRUE, TRUE, 0);
 
-    // Elbow label
+    //elbow label
     GtkWidget *elbow_label = gtk_label_new("Elbow");
     gtk_box_pack_start(GTK_BOX(vbox_left), elbow_label, FALSE, FALSE, 0);
 
-    // Hbox for elbow buttons
-    GtkWidget *elbow_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); // 5 pixel spacing
+    //hbox for elbow buttons
+    GtkWidget *elbow_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); //5 pixel spacing
     gtk_box_pack_start(GTK_BOX(vbox_left), elbow_hbox, FALSE, FALSE, 0);
-    // Elbow pos button (pressed and released for continuous holding button)
+    //elbow pos button (pressed and released for continuous holding button)
     GtkWidget *elbow_pos_button = gtk_button_new_with_label("Up (f)");
     g_signal_connect(elbow_pos_button, "pressed", G_CALLBACK(on_elbow_pos_button_pressed), NULL);
     g_signal_connect(elbow_pos_button, "released", G_CALLBACK(on_elbow_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(elbow_hbox), elbow_pos_button, TRUE, TRUE, 0);
-    // Elbow neg button
+    //elbow neg button
     GtkWidget *elbow_neg_button = gtk_button_new_with_label("Down (r)");
     g_signal_connect(elbow_neg_button, "pressed", G_CALLBACK(on_elbow_neg_button_pressed), NULL);
     g_signal_connect(elbow_neg_button, "released", G_CALLBACK(on_elbow_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(elbow_hbox), elbow_neg_button, TRUE, TRUE, 0);
 
-    // Wrist label
+    //wrist label
     GtkWidget *wrist_label = gtk_label_new("Wrist");
     gtk_box_pack_start(GTK_BOX(vbox_left), wrist_label, FALSE, FALSE, 0);
 
-    // Hbox for wrist buttons
-    GtkWidget *wrist_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); // 5 pixel spacing
+    //hbox for wrist buttons
+    GtkWidget *wrist_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); //5 pixel spacing
     gtk_box_pack_start(GTK_BOX(vbox_left), wrist_hbox, FALSE, FALSE, 0);
-    // Wrist pos button (pressed and released for continuous holding button)
+    //wrist pos button (pressed and released for continuous holding button)
     GtkWidget *wrist_pos_button = gtk_button_new_with_label("Up (d)");
     g_signal_connect(wrist_pos_button, "pressed", G_CALLBACK(on_wrist_pos_button_pressed), NULL);
     g_signal_connect(wrist_pos_button, "released", G_CALLBACK(on_wrist_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(wrist_hbox), wrist_pos_button, TRUE, TRUE, 0);
-    // Wrist neg button
+    //wrist neg button
     GtkWidget *wrist_neg_button = gtk_button_new_with_label("Down (e)");
     g_signal_connect(wrist_neg_button, "pressed", G_CALLBACK(on_wrist_neg_button_pressed), NULL);
     g_signal_connect(wrist_neg_button, "released", G_CALLBACK(on_wrist_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(wrist_hbox), wrist_neg_button, TRUE, TRUE, 0);
 
-    // Claw label
+    //claw label
     GtkWidget *claw_label = gtk_label_new("Claw");
     gtk_box_pack_start(GTK_BOX(vbox_left), claw_label, FALSE, FALSE, 0);
 
-    // Hbox for claw buttons
-    GtkWidget *claw_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); // 5 pixel spacing
+    //hbox for claw buttons
+    GtkWidget *claw_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5); //5 pixel spacing
     gtk_box_pack_start(GTK_BOX(vbox_left), claw_hbox, FALSE, FALSE, 0);
-    // Claw pos button (pressed and released for continuous holding button)
+    //claw pos button (pressed and released for continuous holding button)
     GtkWidget *claw_pos_button = gtk_button_new_with_label("Open (s)");
     g_signal_connect(claw_pos_button, "pressed", G_CALLBACK(on_claw_pos_button_pressed), NULL);
     g_signal_connect(claw_pos_button, "released", G_CALLBACK(on_claw_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(claw_hbox), claw_pos_button, TRUE, TRUE, 0);
-    // Claw neg button (pressed and released for continuous holding button)
+    //claw neg button (pressed and released for continuous holding button)
     GtkWidget *claw_neg_button = gtk_button_new_with_label("Close (w)");
     g_signal_connect(claw_neg_button, "pressed", G_CALLBACK(on_claw_neg_button_pressed), NULL);
     g_signal_connect(claw_neg_button, "released", G_CALLBACK(on_claw_button_released), NULL);
     gtk_box_pack_start(GTK_BOX(claw_hbox), claw_neg_button, TRUE, TRUE, 0);
 
-    // Right side vbox
+    //right side vbox
 
-    // List of buttons for isolating mouse input
+    //list of buttons for isolating mouse input
     control_buttons = g_list_append(control_buttons, light_on_button);
     control_buttons = g_list_append(control_buttons, light_off_button);
     control_buttons = g_list_append(control_buttons, base_pos_button);
@@ -884,16 +885,16 @@ int main(int argc, char *argv[])
     control_buttons = g_list_append(control_buttons, claw_pos_button);
     control_buttons = g_list_append(control_buttons, claw_neg_button);
 
-    // Input isolating toggle buttons
+    //input isolating toggle buttons
     GtkWidget *input_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(vbox_right), input_hbox, FALSE, FALSE, 0);
 
-    // Using radio buttons for mutually exclusive selection
+    //using radio buttons for mutually exclusive selection
     GtkWidget *mouse_toggle = gtk_radio_button_new_with_label(NULL, "Mouse input");
     GtkWidget *keyboard_toggle = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(mouse_toggle), "Keyboard input");
     GtkWidget *joystick_toggle = gtk_radio_button_new_with_label_from_widget(GTK_RADIO_BUTTON(mouse_toggle), "Joystick input");
 
-    // Default selection
+    //default selection
     gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(mouse_toggle), TRUE);
 
     gtk_box_pack_start(GTK_BOX(input_hbox), mouse_toggle, TRUE, TRUE, 0);
@@ -905,29 +906,29 @@ int main(int argc, char *argv[])
     g_signal_connect(joystick_toggle, "toggled", G_CALLBACK(on_joystick_toggle_clicked), NULL);
 
     gtk_widget_set_margin_bottom(input_hbox, 10);
-
-    /// Label for ioctl input field
+    
+    ///label for ioctl input field
     GtkWidget *ioctl_label = gtk_label_new("IOCTL command input:");
     gtk_box_pack_start(GTK_BOX(vbox_right), ioctl_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(ioctl_label, GTK_ALIGN_START);
 
-    // Hbox for both the text entry and send button
+    //hbox for both the text entry and send button
     GtkWidget *ioctl_hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
     gtk_box_pack_start(GTK_BOX(vbox_right), ioctl_hbox, FALSE, FALSE, 0);
-    gtk_box_set_homogeneous(GTK_BOX(ioctl_hbox), FALSE); // Keeps send button beside textbox
+    gtk_box_set_homogeneous(GTK_BOX(ioctl_hbox), FALSE); //keeps send button beside textbox
 
     gtk_widget_set_halign(ioctl_hbox, GTK_ALIGN_START);
 
-    // Text entry for ioctl input
+    //text entry for ioctl input
     GtkWidget *text_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(text_entry), "Enter direct command...");
     g_signal_connect(text_entry, "activate", G_CALLBACK(on_text_entry_submit), text_entry);
-    gtk_entry_set_width_chars(GTK_ENTRY(text_entry), 22); // Textbox width
+    gtk_entry_set_width_chars(GTK_ENTRY(text_entry), 22); //textbox width
     gtk_box_pack_start(GTK_BOX(ioctl_hbox), text_entry, FALSE, FALSE, 0);
     gtk_widget_set_hexpand(text_entry, TRUE);
     gtk_widget_set_margin_top(text_entry, 5);
     
-    // Send button for ioctl input
+    //send button for ioctl input
     GtkWidget *send_button = gtk_button_new_with_label("Send");
     g_signal_connect(send_button, "clicked", G_CALLBACK(on_text_entry_submit), text_entry);
     gtk_box_pack_start(GTK_BOX(ioctl_hbox), send_button, FALSE, FALSE, 0);
@@ -935,49 +936,41 @@ int main(int argc, char *argv[])
 
     gtk_widget_set_margin_bottom(ioctl_hbox, 10);
 
-    // Label for command status
+    //label for command status
     command_status_label = gtk_label_new("Command status: None");
     gtk_box_pack_start(GTK_BOX(vbox_right), command_status_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(command_status_label, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(command_status_label, 10);
 
-    // Status update: arm connection status
-    // Update/check arm connection
+    //status update: arm connection status
+    //update/check arm connection
     arm_connection_label = gtk_label_new("Arm status: Disconnected");
     gtk_box_pack_start(GTK_BOX(vbox_right), arm_connection_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(arm_connection_label, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(arm_connection_label, 10);
 
-    // Status update: external input status
-    // Update/check joystick connection
+    //status update: external input status
+    //update/check joystick connection
     joystick_connection_label = gtk_label_new("Joystick status: Disconnected");
     gtk_box_pack_start(GTK_BOX(vbox_right), joystick_connection_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(joystick_connection_label, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(joystick_connection_label, 10);
 
-    // Status update: battery status
-    // Update/check battery
+    //status update: battery status
+    //update/check battery
     battery_status_label = gtk_label_new("Battery: 0/4");
     gtk_box_pack_start(GTK_BOX(vbox_right), battery_status_label, FALSE, FALSE, 0);
     gtk_widget_set_halign(battery_status_label, GTK_ALIGN_START);
     gtk_widget_set_margin_bottom(battery_status_label, 10);
 
 
-    // Declare a thread variable for the joystick listener
     pthread_t joystick_thread;
-
-    // Attempt to create a new thread
     if (pthread_create(&joystick_thread, NULL, joystick_listener, NULL) != 0) {
-        // If thread creation fails, print an error message
         perror("Failed to create joystick thread");
-
-         // Update the GTK label to indicate the joystick connection failed
         gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Failed");
     } else {
-        // If the thread is successfully created, update the label to show connection success
         gtk_label_set_text(GTK_LABEL(joystick_connection_label), "Joystick status: Connected");
     }
-
 
     gtk_widget_show_all(window);
 
